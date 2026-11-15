@@ -25,7 +25,7 @@ WeatherPlugin& WeatherPlugin::Instance() {
     return inst;
 }
 
-WeatherPlugin::WeatherPlugin() : m_item(this) {}
+WeatherPlugin::WeatherPlugin() : m_topItem(this, true), m_bottomItem(this, false) {}
 
 WeatherPlugin::~WeatherPlugin() {
     StopWorker();
@@ -65,7 +65,9 @@ void WeatherPlugin::OnExtenedInfo(ExtendedInfoIndex index, const wchar_t* data) 
 }
 
 IPluginItem* WeatherPlugin::GetItem(int index) {
-    return (index == 0) ? &m_item : nullptr;
+    if (index == 0) return &m_topItem;
+    if (index == 1) return &m_bottomItem;
+    return nullptr;
 }
 
 void WeatherPlugin::StartWorker() {
@@ -158,7 +160,7 @@ const wchar_t* WeatherPlugin::GetInfo(PluginInfoIndex index) {
     case TMI_DESCRIPTION: return L10n::PluginDesc(lang);
     case TMI_AUTHOR:      return L"Community";
     case TMI_COPYRIGHT:   return L"MIT License";
-    case TMI_VERSION:     return L"1.0.0";
+    case TMI_VERSION:     return L"1.1.0";
     case TMI_URL:         return L"https://github.com/zhongyang219/TrafficMonitor";
     default:              return L"";
     }
@@ -203,7 +205,10 @@ const wchar_t* WeatherPlugin::GetTooltipInfo() {
         for (const auto& sl : snap.slots) {
             if (shown >= 6) break;
             tip += L"\n";
-            if (sl.is_tomorrow) tip += ru ? L"\u0417\u0430\u0432\u0442\u0440\u0430 \u00B7 " : L"Tomorrow \u00B7 ";
+            if (!sl.is_today) {
+                if (sl.day_num > 0) tip += std::to_wstring(sl.day_num) + L" \u00B7 ";
+                else tip += ru ? L"\u0417\u0430\u0432\u0442\u0440\u0430 \u00B7 " : L"Tomorrow \u00B7 ";
+            }
             tip += L10n::DayPartFull(cfg.lang, sl.part);
             tip += L": " + fmtT(sl.temp_c) + L" (" + L10n::WeatherName(cfg.lang, sl.kind) + L")";
             ++shown;

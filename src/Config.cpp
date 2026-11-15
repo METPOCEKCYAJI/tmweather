@@ -59,7 +59,8 @@ void ConfigStore::Load(const std::wstring& config_dir, PluginConfig& cfg) {
     cfg.display_mode = static_cast<DisplayMode>(std::clamp(dm, 0, 2));
     cfg.extended_slots = (ReadInt(p, L"extended_slots", 4) == 3) ? 3 : 4;
     cfg.scroll_mode = (ReadInt(p, L"scroll_mode", 0) == 1) ? ScrollBehavior::AutoCarousel : ScrollBehavior::TimeAndWheel;
-    cfg.icon_style = (ReadInt(p, L"icon_style", 0) == 1) ? IconStyle::Monochrome : IconStyle::Duotone;
+    int ist = ReadInt(p, L"icon_style", 0);
+    cfg.icon_style = static_cast<IconStyle>(std::clamp(ist, 0, 4));
     int bs = ReadInt(p, L"border_style", 0);
     cfg.border_style = static_cast<BorderStyle>(std::clamp(bs, 0, 2));
     cfg.fill_tomorrow = (ReadInt(p, L"fill_tomorrow", 1) != 0);

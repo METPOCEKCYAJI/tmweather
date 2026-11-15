@@ -8,7 +8,7 @@ class WeatherPlugin;
 
 class WeatherItem : public IPluginItem {
 public:
-    explicit WeatherItem(WeatherPlugin* owner);
+    WeatherItem(WeatherPlugin* owner, bool is_top);
 
     const wchar_t* GetItemName() const override;
     const wchar_t* GetItemId() const override;
@@ -22,9 +22,8 @@ public:
     int GetItemWidthEx(void* hDC) const override;
     int OnMouseEvent(MouseEventType type, int x, int y, void* hWnd, int flag) override;
 
-    int IsDoubleLineExclusive() const override;
-
 private:
     WeatherPlugin* m_owner = nullptr;
+    bool m_isTop = true;
     mutable std::wstring m_nameBuf;
 };

@@ -202,7 +202,9 @@ void BuildSlotsFromHourly(const std::vector<HourlyPoint>& hours, int cur_y, int 
         if (const HourlyPoint* hp = FindTargetHour(hours, dy, dm, dd, rep_hour)) {
             ForecastSlot slot;
             slot.part = part;
+            slot.is_today = !is_tomorrow;
             slot.is_tomorrow = is_tomorrow;
+            slot.day_num = dd;
             slot.temp_c = hp->temp_c;
             slot.kind = hp->kind;
             snap.slots.push_back(slot);

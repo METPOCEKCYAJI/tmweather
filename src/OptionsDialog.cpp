@@ -96,8 +96,18 @@ void ApplyLanguageTexts(HWND hDlg, LangMode lang, DialogState* st) {
     int iconSel = (int)SendDlgItemMessageW(hDlg, IDC_COMBO_ICON_STYLE, CB_GETCURSEL, 0, 0);
     if (iconSel < 0) iconSel = (int)st->cfg.icon_style;
     refillCombo(IDC_COMBO_ICON_STYLE,
-        ru ? std::vector<const wchar_t*>{L"\u0426\u0432\u0435\u0442\u043D\u044B\u0435 (Flat Duotone)", L"\u041C\u043E\u043D\u043E\u0445\u0440\u043E\u043C\u043D\u044B\u0435 (\u043F\u043E\u0434 \u0442\u0435\u043C\u0443 \u043F\u0430\u043D\u0435\u043B\u0438)"}
-           : std::vector<const wchar_t*>{L"Color (Flat Duotone)", L"Monochrome (taskbar theme)"},
+        ru ? std::vector<const wchar_t*>{
+                L"\u042F\u0440\u043A\u0438\u0435 (Bold Vivid)",
+                L"\u041A\u043E\u043D\u0442\u0443\u0440\u043D\u044B\u0435 (Thick Outline)",
+                L"\u041E\u0431\u044A\u0435\u043C\u043D\u044B\u0435 3D (Windows 11)",
+                L"\u0411\u0435\u043B\u044B\u0435 + \u0446\u0432\u0435\u0442 (High Contrast)",
+                L"\u041C\u043E\u043D\u043E\u0445\u0440\u043E\u043C\u043D\u044B\u0435 (\u043F\u043E\u0434 \u0442\u0435\u043C\u0443 \u043F\u0430\u043D\u0435\u043B\u0438)"}
+           : std::vector<const wchar_t*>{
+                L"Bold Vivid (bright + white)",
+                L"Thick Outline (clean lines)",
+                L"Soft 3D (Windows 11 style)",
+                L"High-Contrast White + rain",
+                L"Monochrome (taskbar theme)"},
         iconSel);
 
     int borderSel = (int)SendDlgItemMessageW(hDlg, IDC_COMBO_BORDER, CB_GETCURSEL, 0, 0);
@@ -236,7 +246,8 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) {
             st->cfg.display_mode = static_cast<DisplayMode>(std::clamp((int)SendDlgItemMessageW(hDlg, IDC_COMBO_MODE, CB_GETCURSEL, 0, 0), 0, 2));
             st->cfg.extended_slots = (SendDlgItemMessageW(hDlg, IDC_COMBO_EXT_SLOTS, CB_GETCURSEL, 0, 0) == 0) ? 3 : 4;
             st->cfg.scroll_mode = (SendDlgItemMessageW(hDlg, IDC_COMBO_SCROLL, CB_GETCURSEL, 0, 0) == 1) ? ScrollBehavior::AutoCarousel : ScrollBehavior::TimeAndWheel;
-            st->cfg.icon_style = (SendDlgItemMessageW(hDlg, IDC_COMBO_ICON_STYLE, CB_GETCURSEL, 0, 0) == 1) ? IconStyle::Monochrome : IconStyle::Duotone;
+            int ist = (int)SendDlgItemMessageW(hDlg, IDC_COMBO_ICON_STYLE, CB_GETCURSEL, 0, 0);
+            st->cfg.icon_style = static_cast<IconStyle>(std::clamp(ist, 0, 4));
             st->cfg.border_style = static_cast<BorderStyle>(std::clamp((int)SendDlgItemMessageW(hDlg, IDC_COMBO_BORDER, CB_GETCURSEL, 0, 0), 0, 2));
             st->cfg.fill_tomorrow = (SendDlgItemMessageW(hDlg, IDC_CHK_FILL_TOMORROW, BM_GETCHECK, 0, 0) == BST_CHECKED);
 

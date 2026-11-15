@@ -34,7 +34,9 @@ struct HourlyPoint {
 
 struct ForecastSlot {
     DayPart part = DayPart::Day;
+    bool is_today = true;
     bool is_tomorrow = false;
+    int day_num = 0;
     double temp_c = 0.0;
     WeatherKind kind = WeatherKind::Unknown;
 };

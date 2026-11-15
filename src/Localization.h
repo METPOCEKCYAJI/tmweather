@@ -12,8 +12,11 @@ struct L10n {
             ? L"\u041F\u043E\u0433\u043E\u0434\u0430 \u0432 \u043F\u0430\u043D\u0435\u043B\u0438 \u0437\u0430\u0434\u0430\u0447 (Open-Meteo \u0438 \u042F\u043D\u0434\u0435\u043A\u0441.\u041F\u043E\u0433\u043E\u0434\u0430)"
             : L"Taskbar weather widget (Open-Meteo & Yandex Weather)";
     }
-    static inline const wchar_t* ItemName(LangMode l) {
-        return l == LangMode::RU ? L"\u041F\u043E\u0433\u043E\u0434\u0430 (\u0431\u043B\u043E\u043A)" : L"Weather Widget";
+    static inline const wchar_t* TopItemName(LangMode l) {
+        return l == LangMode::RU ? L"\u041F\u043E\u0433\u043E\u0434\u0430 (\u0412\u0435\u0440\u0445)" : L"Weather (Top)";
+    }
+    static inline const wchar_t* BottomItemName(LangMode l) {
+        return l == LangMode::RU ? L"\u041F\u043E\u0433\u043E\u0434\u0430 (\u041D\u0438\u0437)" : L"Weather (Bottom)";
     }
     static inline const wchar_t* DayPartShort(LangMode l, DayPart p) {
         if (l == LangMode::RU) {
