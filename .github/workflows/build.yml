@@ -26,7 +26,20 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path include | Out-Null
-          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/zhongyang219/TrafficMonitor/master/TrafficMonitor/PluginInterface.h" -OutFile "include/PluginInterface.h"
+          $urls = @(
+            "https://raw.githubusercontent.com/zhongyang219/TrafficMonitor/master/include/PluginInterface.h",
+            "https://raw.githubusercontent.com/zhongyang219/TrafficMonitorPlugins/main/PluginTemplate/PluginInterface.h"
+          )
+          foreach ($u in $urls) {
+            try {
+              Invoke-WebRequest -Uri $u -OutFile "include/PluginInterface.h" -ErrorAction Stop
+              Write-Host "Downloaded from $u"
+              break
+            } catch {
+              Write-Host "Skip $u"
+            }
+          }
+          if (-not (Test-Path "include/PluginInterface.h")) { throw "Failed to download PluginInterface.h" }
 
       - name: Configure CMake (${{ matrix.name }})
         run: cmake -B build -G "Visual Studio 17 2022" -A ${{ matrix.arch }}
