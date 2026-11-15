@@ -22,8 +22,7 @@ public:
     int GetItemWidthEx(void* hDC) const override;
     int OnMouseEvent(MouseEventType type, int x, int y, void* hWnd, int flag) override;
 
-    bool IsDoubleLineExclusive() const;
-    bool IsDoubleLineExclusive();
+    int IsDoubleLineExclusive() const override;
 
 private:
     WeatherPlugin* m_owner = nullptr;
