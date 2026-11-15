@@ -1,0 +1,64 @@
+name: Build WeatherPlus Plugin
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - arch: x64
+            name: x64
+          - arch: Win32
+            name: x86
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Fetch TrafficMonitor PluginInterface.h
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path include | Out-Null
+          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/zhongyang219/TrafficMonitor/master/TrafficMonitor/PluginInterface.h" -OutFile "include/PluginInterface.h"
+
+      - name: Configure CMake (${{ matrix.name }})
+        run: cmake -B build -G "Visual Studio 17 2022" -A ${{ matrix.arch }}
+
+      - name: Build Release (${{ matrix.name }})
+        run: cmake --build build --config Release
+
+      - name: Package artifact
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Copy-Item "build/Release/WeatherPlus.dll" "dist/WeatherPlus-${{ matrix.name }}.dll"
+
+      - name: Upload ${{ matrix.name }} Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: WeatherPlus-${{ matrix.name }}
+          path: dist/WeatherPlus-${{ matrix.name }}.dll
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/WeatherPlus-x64/WeatherPlus-x64.dll
+            artifacts/WeatherPlus-x86/WeatherPlus-x86.dll
