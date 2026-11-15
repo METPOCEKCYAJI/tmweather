@@ -37,12 +37,8 @@ const wchar_t* WeatherItem::GetItemLableText() const { return L""; }
 const wchar_t* WeatherItem::GetItemValueText() const { return L""; }
 const wchar_t* WeatherItem::GetItemValueSampleText() const { return L""; }
 
-bool WeatherItem::IsDoubleLineExclusive() const {
-    return m_owner->GetConfig().display_mode != DisplayMode::Compact;
-}
-
-bool WeatherItem::IsDoubleLineExclusive() {
-    return m_owner->GetConfig().display_mode != DisplayMode::Compact;
+int WeatherItem::IsDoubleLineExclusive() const {
+    return (m_owner->GetConfig().display_mode != DisplayMode::Compact) ? 1 : 0;
 }
 
 int WeatherItem::GetItemWidth() const {
