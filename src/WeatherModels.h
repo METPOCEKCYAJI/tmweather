@@ -41,6 +41,12 @@ struct ForecastSlot {
     WeatherKind kind = WeatherKind::Unknown;
 };
 
+struct DailyTemp {
+    int day_offset = 0;
+    int day_num = 0;
+    double day_temp_c = 0.0;
+};
+
 struct GeoCandidate {
     std::wstring name;
     std::wstring country;
@@ -68,4 +74,5 @@ struct WeatherSnapshot {
     std::wstring updated_time;
 
     std::vector<ForecastSlot> slots;
+    std::vector<DailyTemp> daily;
 };

@@ -55,14 +55,20 @@ void ConfigStore::Load(const std::wstring& config_dir, PluginConfig& cfg) {
     cfg.longitude = ReadDouble(p, L"longitude", 13.4050);
 
     cfg.unit = (ReadInt(p, L"unit", 0) == 1) ? TempUnit::Fahrenheit : TempUnit::Celsius;
-    int dm = ReadInt(p, L"display_mode", 2);
-    cfg.display_mode = static_cast<DisplayMode>(std::clamp(dm, 0, 2));
+    cfg.display_mode = static_cast<DisplayMode>(std::clamp(ReadInt(p, L"display_mode", 2), 0, 2));
     cfg.extended_slots = (ReadInt(p, L"extended_slots", 4) == 3) ? 3 : 4;
     cfg.scroll_mode = (ReadInt(p, L"scroll_mode", 0) == 1) ? ScrollBehavior::AutoCarousel : ScrollBehavior::TimeAndWheel;
-    int ist = ReadInt(p, L"icon_style", 1);
-    cfg.icon_style = static_cast<IconStyle>(std::clamp(ist, 0, 6));
-    int bs = ReadInt(p, L"border_style", 3);
-    cfg.border_style = static_cast<BorderStyle>(std::clamp(bs, 0, 3));
+    cfg.icon_style = static_cast<IconStyle>(std::clamp(ReadInt(p, L"icon_style", 0), 0, 6));
+    cfg.vignette_level = std::clamp(ReadInt(p, L"vignette_level", 3), 0, 4);
+    cfg.bar_thickness = std::clamp(ReadInt(p, L"bar_thickness", 1), 0, 3);
+    cfg.bar_contrast = std::clamp(ReadInt(p, L"bar_contrast", 1), 0, 2);
+    cfg.border_style = static_cast<BorderStyle>(std::clamp(ReadInt(p, L"border_style", 3), 0, 3));
+
+    cfg.alert_mode = static_cast<AlertMode>(std::clamp(ReadInt(p, L"alert_mode", 2), 0, 2));
+    cfg.alert_pos = static_cast<AlertPos>(std::clamp(ReadInt(p, L"alert_pos", 0), 0, 5));
+    cfg.alert_days = std::clamp(ReadInt(p, L"alert_days", 3), 1, 7);
+    cfg.alert_threshold = std::clamp(ReadInt(p, L"alert_threshold", 5), 1, 40);
+
     cfg.fill_tomorrow = (ReadInt(p, L"fill_tomorrow", 1) != 0);
     cfg.refresh_minutes = std::clamp(ReadInt(p, L"refresh_minutes", 30), 5, 360);
 }
@@ -92,7 +98,16 @@ void ConfigStore::Save(const std::wstring& config_dir, const PluginConfig& cfg) 
     WriteInt(p, L"extended_slots", cfg.extended_slots);
     WriteInt(p, L"scroll_mode", static_cast<int>(cfg.scroll_mode));
     WriteInt(p, L"icon_style", static_cast<int>(cfg.icon_style));
+    WriteInt(p, L"vignette_level", cfg.vignette_level);
+    WriteInt(p, L"bar_thickness", cfg.bar_thickness);
+    WriteInt(p, L"bar_contrast", cfg.bar_contrast);
     WriteInt(p, L"border_style", static_cast<int>(cfg.border_style));
+
+    WriteInt(p, L"alert_mode", static_cast<int>(cfg.alert_mode));
+    WriteInt(p, L"alert_pos", static_cast<int>(cfg.alert_pos));
+    WriteInt(p, L"alert_days", cfg.alert_days);
+    WriteInt(p, L"alert_threshold", cfg.alert_threshold);
+
     WriteInt(p, L"fill_tomorrow", cfg.fill_tomorrow ? 1 : 0);
     WriteInt(p, L"refresh_minutes", cfg.refresh_minutes);
 }

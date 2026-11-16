@@ -21,6 +21,19 @@ enum class BorderStyle {
     DividersOnly = 2,
     TransparentClean = 3
 };
+enum class AlertMode {
+    Off = 0,
+    Arrow = 1,
+    Thermometer = 2
+};
+enum class AlertPos {
+    LeftTop = 0,
+    LeftCenter = 1,
+    LeftBottom = 2,
+    RightTop = 3,
+    RightCenter = 4,
+    RightBottom = 5
+};
 
 struct PluginConfig {
     LangMode lang = LangMode::RU;
@@ -39,8 +52,17 @@ struct PluginConfig {
     DisplayMode display_mode = DisplayMode::Extended;
     int extended_slots = 4;
     ScrollBehavior scroll_mode = ScrollBehavior::TimeAndWheel;
-    IconStyle icon_style = IconStyle::TopBar;
+    IconStyle icon_style = IconStyle::SkyCards;
+    int vignette_level = 3; // 0=Off, 1=Weak, 2=Medium, 3=Strong, 4=Max
+    int bar_thickness = 1;  // 0=2px, 1=3px, 2=4px, 3=5px
+    int bar_contrast = 1;   // 0=Normal, 1=Bright, 2=Ultra
     BorderStyle border_style = BorderStyle::TransparentClean;
+
+    AlertMode alert_mode = AlertMode::Thermometer;
+    AlertPos alert_pos = AlertPos::LeftTop;
+    int alert_days = 3;
+    int alert_threshold = 5;
+
     bool fill_tomorrow = true;
     int refresh_minutes = 30;
 

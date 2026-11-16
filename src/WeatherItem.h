@@ -23,6 +23,10 @@ public:
     int OnMouseEvent(MouseEventType type, int x, int y, void* hWnd, int flag) override;
     int IsDoubleLineExclusive() const override { return 1; }
 
+    static int EvaluateTempAlert(const PluginConfig& cfg, const WeatherSnapshot& snap, std::wstring* out_desc = nullptr);
+    static void DrawBlock(HDC hdc, int x, int y, int w, int h, bool dark_mode, const PluginConfig& cfg,
+                          const WeatherSnapshot& snap, int scroll_idx, bool force_preview_alert);
+
 private:
     WeatherPlugin* m_owner = nullptr;
     mutable std::wstring m_nameBuf;
