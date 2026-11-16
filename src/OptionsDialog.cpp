@@ -41,8 +41,8 @@ void ApplyLanguageTexts(HWND hDlg, LangMode lang, DialogState* st) {
     SetDlgItemTextW(hDlg, IDC_LBL_MODE, ru ? L"\u0420\u0435\u0436\u0438\u043C \u0431\u043B\u043E\u043A\u0430:" : L"Display Mode:");
     SetDlgItemTextW(hDlg, IDC_LBL_EXT_SLOTS, ru ? L"\u041F\u043B\u0438\u0442\u043E\u043A \u043F\u0440\u043E\u0433\u043D\u043E\u0437\u0430:" : L"Extended Slots:");
     SetDlgItemTextW(hDlg, IDC_LBL_SCROLL, ru ? L"\u041F\u0440\u043E\u043A\u0440\u0443\u0442\u043A\u0430:" : L"Scroll Mode:");
-    SetDlgItemTextW(hDlg, IDC_LBL_ICON_STYLE, ru ? L"\u0421\u0442\u0438\u043B\u044C \u043A\u0430\u0440\u0442\u043E\u0447\u0435\u043A:" : L"Card Style:");
-    SetDlgItemTextW(hDlg, IDC_LBL_BORDER, ru ? L"\u0413\u0440\u0430\u043D\u0438\u0446\u044B \u0431\u043B\u043E\u043A\u0430:" : L"Block Border:");
+    SetDlgItemTextW(hDlg, IDC_LBL_ICON_STYLE, ru ? L"\u0421\u0442\u0438\u043B\u044C \u043A\u0430\u0440\u0442\u043E\u0447\u0435\u043A:" : L"Style:");
+    SetDlgItemTextW(hDlg, IDC_LBL_BORDER, ru ? L"\u0420\u0430\u043C\u043A\u0430 \u0438 \u0444\u043E\u043D:" : L"Border & Bg:");
     SetDlgItemTextW(hDlg, IDC_CHK_FILL_TOMORROW, ru ? L"\u0414\u043E\u043F\u043E\u043B\u043D\u044F\u0442\u044C \u0437\u0430\u0432\u0442\u0440\u0430\u0448\u043D\u0438\u043C\u0438 \u0438\u043D\u0442\u0435\u0440\u0432\u0430\u043B\u0430\u043C\u0438" : L"Fill with tomorrow slots");
     SetDlgItemTextW(hDlg, IDC_LBL_REFRESH, ru ? L"\u041E\u0431\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u0435 (\u043C\u0438\u043D):" : L"Refresh (min):");
     SetDlgItemTextW(hDlg, IDOK, L"OK");
@@ -98,17 +98,35 @@ void ApplyLanguageTexts(HWND hDlg, LangMode lang, DialogState* st) {
     refillCombo(IDC_COMBO_ICON_STYLE,
         ru ? std::vector<const wchar_t*>{
                 L"\u0410\u0442\u043C\u043E\u0441\u0444\u0435\u0440\u043D\u044B\u0435 \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0438 (1\u0410)",
-                L"\u041F\u043E\u043B\u043E\u0441\u0430 \u043F\u043E\u0433\u043E\u0434\u044B \u0441\u0432\u0435\u0440\u0445\u0443 (3)"}
+                L"\u041F\u043E\u043B\u043E\u0441\u0430 \u043F\u043E\u0433\u043E\u0434\u044B \u0441\u0432\u0435\u0440\u0445\u0443 (A)",
+                L"\u041F\u043E\u043B\u043E\u0441\u0430 \u043F\u043E\u0433\u043E\u0434\u044B \u0441\u043D\u0438\u0437\u0443 (B)",
+                L"\u0417\u043D\u0430\u0447\u043E\u043A + \u0432\u0440\u0435\u043C\u044F \u0441\u0432\u0435\u0440\u0445\u0443 (C)",
+                L"\u041C\u0435\u0442\u043A\u0430 \u0441\u043B\u0435\u0432\u0430 \u043E\u0442 \u043A\u043E\u043B\u043E\u043D\u043A\u0438 (D)",
+                L"\u041A\u0440\u0443\u043F\u043D\u044B\u0439 \u0437\u043D\u0430\u0447\u043E\u043A \u043D\u0430 \u0444\u043E\u043D\u0435 (E)",
+                L"\u0417\u043D\u0430\u0447\u043E\u043A 16x16 \u0441\u0432\u0435\u0440\u0445\u0443 (F)"}
            : std::vector<const wchar_t*>{
                 L"Sky Atmosphere Cards (1A)",
-                L"Top Weather Bar (3)"},
+                L"Top Weather Bar (A)",
+                L"Bottom Weather Bar (B)",
+                L"Glyph + Time on Top (C)",
+                L"Left Weather Pill (D)",
+                L"Large Watermark Icon (E)",
+                L"16x16 Icon Top + Temp (F)"},
         iconSel);
 
     int borderSel = (int)SendDlgItemMessageW(hDlg, IDC_COMBO_BORDER, CB_GETCURSEL, 0, 0);
     if (borderSel < 0) borderSel = (int)st->cfg.border_style;
     refillCombo(IDC_COMBO_BORDER,
-        ru ? std::vector<const wchar_t*>{L"\u0420\u0430\u043C\u043A\u0430 \u0438 \u0440\u0430\u0437\u0434\u0435\u043B\u0438\u0442\u0435\u043B\u0438", L"\u0422\u043E\u043B\u044C\u043A\u043E \u0440\u0430\u0437\u0434\u0435\u043B\u0438\u0442\u0435\u043B\u0438", L"\u0411\u0435\u0437 \u0440\u0430\u043C\u043A\u0438"}
-           : std::vector<const wchar_t*>{L"Border + dividers", L"Dividers only", L"No border"},
+        ru ? std::vector<const wchar_t*>{
+                L"\u0420\u0430\u043C\u043A\u0430, \u0444\u043E\u043D \u0438 \u0440\u0430\u0437\u0434\u0435\u043B\u0438\u0442\u0435\u043B\u0438",
+                L"\u0424\u043E\u043D \u0438 \u0440\u0430\u0437\u0434\u0435\u043B\u0438\u0442\u0435\u043B\u0438 (\u0431\u0435\u0437 \u0440\u0430\u043C\u043A\u0438)",
+                L"\u0422\u043E\u043B\u044C\u043A\u043E \u0440\u0430\u0437\u0434\u0435\u043B\u0438\u0442\u0435\u043B\u0438 (\u0431\u0435\u0437 \u0444\u043E\u043D\u0430)",
+                L"\u0411\u0435\u0437 \u0440\u0430\u043C\u043A\u0438, \u0444\u043E\u043D\u0430 \u0438 \u0440\u0430\u0437\u0434\u0435\u043B\u0438\u0442\u0435\u043B\u0435\u0439"}
+           : std::vector<const wchar_t*>{
+                L"Border, fill & dividers",
+                L"Fill & dividers (no border)",
+                L"Dividers only (no fill)",
+                L"Clean (no border, fill or dividers)"},
         borderSel);
 }
 
@@ -241,8 +259,9 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) {
             st->cfg.extended_slots = (SendDlgItemMessageW(hDlg, IDC_COMBO_EXT_SLOTS, CB_GETCURSEL, 0, 0) == 0) ? 3 : 4;
             st->cfg.scroll_mode = (SendDlgItemMessageW(hDlg, IDC_COMBO_SCROLL, CB_GETCURSEL, 0, 0) == 1) ? ScrollBehavior::AutoCarousel : ScrollBehavior::TimeAndWheel;
             int ist = (int)SendDlgItemMessageW(hDlg, IDC_COMBO_ICON_STYLE, CB_GETCURSEL, 0, 0);
-            st->cfg.icon_style = static_cast<IconStyle>(std::clamp(ist, 0, 1));
-            st->cfg.border_style = static_cast<BorderStyle>(std::clamp((int)SendDlgItemMessageW(hDlg, IDC_COMBO_BORDER, CB_GETCURSEL, 0, 0), 0, 2));
+            st->cfg.icon_style = static_cast<IconStyle>(std::clamp(ist, 0, 6));
+            int bs = (int)SendDlgItemMessageW(hDlg, IDC_COMBO_BORDER, CB_GETCURSEL, 0, 0);
+            st->cfg.border_style = static_cast<BorderStyle>(std::clamp(bs, 0, 3));
             st->cfg.fill_tomorrow = (SendDlgItemMessageW(hDlg, IDC_CHK_FILL_TOMORROW, BM_GETCHECK, 0, 0) == BST_CHECKED);
 
             BOOL okNum = FALSE;
