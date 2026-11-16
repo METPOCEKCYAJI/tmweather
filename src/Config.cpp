@@ -58,9 +58,9 @@ void ConfigStore::Load(const std::wstring& config_dir, PluginConfig& cfg) {
     cfg.display_mode = static_cast<DisplayMode>(std::clamp(ReadInt(p, L"display_mode", 2), 0, 2));
     cfg.extended_slots = (ReadInt(p, L"extended_slots", 4) == 3) ? 3 : 4;
     cfg.scroll_mode = (ReadInt(p, L"scroll_mode", 0) == 1) ? ScrollBehavior::AutoCarousel : ScrollBehavior::TimeAndWheel;
-    cfg.icon_style = static_cast<IconStyle>(std::clamp(ReadInt(p, L"icon_style", 0), 0, 6));
+    cfg.icon_style = static_cast<IconStyle>(std::clamp(ReadInt(p, L"icon_style", 1), 0, 7));
     cfg.vignette_level = std::clamp(ReadInt(p, L"vignette_level", 3), 0, 4);
-    cfg.bar_thickness = std::clamp(ReadInt(p, L"bar_thickness", 1), 0, 3);
+    cfg.bar_thickness = std::clamp(ReadInt(p, L"bar_thickness", 2), 0, 3);
     cfg.bar_contrast = std::clamp(ReadInt(p, L"bar_contrast", 1), 0, 2);
     cfg.border_style = static_cast<BorderStyle>(std::clamp(ReadInt(p, L"border_style", 3), 0, 3));
 
@@ -70,6 +70,7 @@ void ConfigStore::Load(const std::wstring& config_dir, PluginConfig& cfg) {
     cfg.alert_threshold = std::clamp(ReadInt(p, L"alert_threshold", 5), 1, 40);
 
     cfg.fill_tomorrow = (ReadInt(p, L"fill_tomorrow", 1) != 0);
+    cfg.show_rain_drop = (ReadInt(p, L"show_rain_drop", 1) != 0);
     cfg.refresh_minutes = std::clamp(ReadInt(p, L"refresh_minutes", 30), 5, 360);
 }
 
@@ -109,5 +110,6 @@ void ConfigStore::Save(const std::wstring& config_dir, const PluginConfig& cfg) 
     WriteInt(p, L"alert_threshold", cfg.alert_threshold);
 
     WriteInt(p, L"fill_tomorrow", cfg.fill_tomorrow ? 1 : 0);
+    WriteInt(p, L"show_rain_drop", cfg.show_rain_drop ? 1 : 0);
     WriteInt(p, L"refresh_minutes", cfg.refresh_minutes);
 }

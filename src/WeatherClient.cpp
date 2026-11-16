@@ -119,24 +119,30 @@ WeatherKind MapWmoCode(int code, bool is_day) {
     if (code == 1 || code == 2) return is_day ? WeatherKind::PartlyCloudyDay : WeatherKind::PartlyCloudyNight;
     if (code == 3) return WeatherKind::Cloudy;
     if (code == 45 || code == 48) return WeatherKind::Fog;
-    if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return WeatherKind::Rain;
-    if ((code >= 71 && code <= 77) || code == 85 || code == 86) return WeatherKind::Snow;
-    if (code >= 95 && code <= 99) return WeatherKind::Storm;
+    if (code == 51 || code == 53 || code == 55 || code == 56 || code == 57) return WeatherKind::Drizzle;
+    if (code == 66 || code == 67) return WeatherKind::Sleet;
+    if ((code >= 61 && code <= 65) || (code >= 80 && code <= 82)) return WeatherKind::Rain;
+    if (code == 77) return WeatherKind::Hail;
+    if ((code >= 71 && code <= 75) || code == 85 || code == 86) return WeatherKind::Snow;
+    if (code == 96 || code == 99) return WeatherKind::StormHail;
+    if (code == 95) return WeatherKind::Storm;
     return WeatherKind::Cloudy;
 }
 
-bool IsWmoPrecip(int code) {
-    return (code >= 51 && code <= 99);
-}
+bool IsWmoPrecip(int code) { return (code >= 51 && code <= 99); }
 
 WeatherKind MapYandexCondition(const std::string& cond, bool is_day) {
     if (cond == "CLEAR") return is_day ? WeatherKind::ClearDay : WeatherKind::ClearNight;
     if (cond == "PARTLY_CLOUDY") return is_day ? WeatherKind::PartlyCloudyDay : WeatherKind::PartlyCloudyNight;
     if (cond == "CLOUDY" || cond == "OVERCAST") return WeatherKind::Cloudy;
     if (cond == "FOG" || cond == "MIST") return WeatherKind::Fog;
-    if (cond == "THUNDERSTORM" || cond == "THUNDERSTORM_WITH_RAIN" || cond == "THUNDERSTORM_WITH_HAIL") return WeatherKind::Storm;
-    if (cond == "SNOW" || cond == "LIGHT_SNOW" || cond == "SNOW_SHOWERS" || cond == "HAIL" || cond == "WET_SNOW") return WeatherKind::Snow;
-    if (cond.find("RAIN") != std::string::npos || cond == "DRIZZLE" || cond == "SHOWERS") return WeatherKind::Rain;
+    if (cond == "THUNDERSTORM_WITH_HAIL") return WeatherKind::StormHail;
+    if (cond == "THUNDERSTORM" || cond == "THUNDERSTORM_WITH_RAIN") return WeatherKind::Storm;
+    if (cond == "HAIL") return WeatherKind::Hail;
+    if (cond == "WET_SNOW" || cond == "SLEET") return WeatherKind::Sleet;
+    if (cond == "SNOW" || cond == "LIGHT_SNOW" || cond == "SNOW_SHOWERS" || cond == "SNOWFALL") return WeatherKind::Snow;
+    if (cond == "LIGHT_RAIN" || cond == "DRIZZLE") return WeatherKind::Drizzle;
+    if (cond.find("RAIN") != std::string::npos || cond == "SHOWERS") return WeatherKind::Rain;
     return WeatherKind::Cloudy;
 }
 
@@ -144,12 +150,28 @@ bool IsYandexPrecip(const std::string& cond) {
     return cond.find("RAIN") != std::string::npos ||
            cond.find("SNOW") != std::string::npos ||
            cond.find("THUNDER") != std::string::npos ||
-           cond == "DRIZZLE" || cond == "SHOWERS" || cond == "HAIL";
+           cond == "DRIZZLE" || cond == "SHOWERS" || cond == "HAIL" || cond == "SLEET";
 }
 
 bool ParseIsoDateTime(const std::string& s, int& y, int& m, int& d, int& h) {
     if (s.size() < 13) return false;
     return sscanf_s(s.c_str(), "%d-%d-%dT%d", &y, &m, &d, &h) == 4;
+}
+
+time_t ToEpochHour(int y, int m, int d, int h) {
+    std::tm t{};
+    t.tm_year = y - 1900;
+    t.tm_mon = m - 1;
+    t.tm_mday = d;
+    t.tm_hour = h;
+    return _mkgmtime(&t);
+}
+
+DayPart HourToDayPart(int h) {
+    if (h >= 6 && h < 12) return DayPart::Morning;
+    if (h >= 12 && h < 18) return DayPart::Day;
+    if (h >= 18 && h < 23) return DayPart::Evening;
+    return DayPart::Night;
 }
 
 void AddDays(int y, int m, int d, int delta_days, int& oy, int& om, int& od) {
@@ -184,17 +206,23 @@ const HourlyPoint* FindTargetHour(const std::vector<HourlyPoint>& hours, int y, 
 void BuildSlotsFromHourly(const std::vector<HourlyPoint>& hours, int cur_y, int cur_m, int cur_d, int cur_h,
                           bool fill_tomorrow, WeatherSnapshot& snap) {
     snap.slots.clear();
+    snap.alert_segments.clear();
     snap.local_hour = cur_h;
 
-    int checked = 0;
+    time_t curEpoch = ToEpochHour(cur_y, cur_m, cur_d, cur_h);
+
     for (const auto& p : hours) {
-        bool is_future_today = (p.year == cur_y && p.month == cur_m && p.day == cur_d && p.hour >= cur_h);
-        int ny, nm, nd;
-        AddDays(cur_y, cur_m, cur_d, 1, ny, nm, nd);
-        bool is_next_day = (p.year == ny && p.month == nm && p.day == nd);
-        if (is_future_today || is_next_day) {
-            if (p.is_precip) snap.rain_expected = true;
-            if (++checked >= 6) break;
+        int hAhead = (int)((ToEpochHour(p.year, p.month, p.day, p.hour) - curEpoch) / 3600);
+        if (hAhead >= 0 && hAhead <= 6 && p.is_precip) {
+            snap.rain_expected = true;
+        }
+        if (hAhead > 0 && hAhead <= 7 * 24) {
+            AlertSegment seg;
+            seg.hours_ahead = hAhead;
+            seg.day_offset = (hAhead - 1) / 24 + 1;
+            seg.part = HourToDayPart(p.hour);
+            seg.temp_c = p.temp_c;
+            snap.alert_segments.push_back(seg);
         }
     }
 
@@ -347,9 +375,7 @@ std::vector<GeoCandidate> WeatherClient::SearchLocation(const std::wstring& quer
                 std::wstring ccl = cc;
                 std::transform(cl.begin(), cl.end(), cl.begin(), ::towlower);
                 std::transform(ccl.begin(), ccl.end(), ccl.begin(), ::towlower);
-                if (cl.find(country_lower) == std::wstring::npos && ccl != country_lower) {
-                    continue;
-                }
+                if (cl.find(country_lower) == std::wstring::npos && ccl != country_lower) continue;
             }
             list.push_back(c);
         }
@@ -382,7 +408,7 @@ WeatherSnapshot WeatherClient::FetchWeather(const PluginConfig& cfg) {
              "query Weather($lat: Float!, $lon: Float!) { "
              "weatherByPoint(request: { lat: $lat, lon: $lon }) { "
              "now { temperature feelsLike condition daytime humidity windSpeed } "
-             "forecast { days(limit: 3) { time hours { time temperature condition } } } "
+             "forecast { days(limit: 7) { time hours { time temperature condition } } } "
              "} }"},
             {"variables", {{"lat", cfg.latitude}, {"lon", cfg.longitude}}}
         };
@@ -455,7 +481,7 @@ WeatherSnapshot WeatherClient::FetchWeather(const PluginConfig& cfg) {
                L"/v1/forecast?latitude=%.5f&longitude=%.5f"
                L"&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,wind_speed_10m"
                L"&hourly=temperature_2m,weather_code,is_day"
-               L"&wind_speed_unit=ms&timezone=auto&forecast_days=3",
+               L"&wind_speed_unit=ms&timezone=auto&forecast_days=7",
                cfg.latitude, cfg.longitude);
 
     std::string resp;

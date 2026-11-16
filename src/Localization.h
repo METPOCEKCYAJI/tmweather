@@ -60,9 +60,13 @@ struct L10n {
             case WeatherKind::PartlyCloudyNight: return L"\u041C\u0430\u043B\u043E\u043E\u0431\u043B\u0430\u0447\u043D\u043E";
             case WeatherKind::Cloudy:            return L"\u041E\u0431\u043B\u0430\u0447\u043D\u043E";
             case WeatherKind::Fog:               return L"\u0422\u0443\u043C\u0430\u043D";
+            case WeatherKind::Drizzle:           return L"\u041C\u043E\u0440\u043E\u0441\u044C";
             case WeatherKind::Rain:              return L"\u0414\u043E\u0436\u0434\u044C";
+            case WeatherKind::Sleet:             return L"\u0414\u043E\u0436\u0434\u044C \u0441\u043E \u0441\u043D\u0435\u0433\u043E\u043C";
             case WeatherKind::Snow:              return L"\u0421\u043D\u0435\u0433";
+            case WeatherKind::Hail:              return L"\u0413\u0440\u0430\u0434";
             case WeatherKind::Storm:             return L"\u0413\u0440\u043E\u0437\u0430";
+            case WeatherKind::StormHail:         return L"\u0413\u0440\u043E\u0437\u0430 \u0441 \u0433\u0440\u0430\u0434\u043E\u043C";
             default:                             return L"\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445";
             }
         } else {
@@ -73,9 +77,13 @@ struct L10n {
             case WeatherKind::PartlyCloudyNight: return L"Partly cloudy";
             case WeatherKind::Cloudy:            return L"Cloudy";
             case WeatherKind::Fog:               return L"Fog";
+            case WeatherKind::Drizzle:           return L"Drizzle";
             case WeatherKind::Rain:              return L"Rain";
+            case WeatherKind::Sleet:             return L"Sleet";
             case WeatherKind::Snow:              return L"Snow";
+            case WeatherKind::Hail:              return L"Hail";
             case WeatherKind::Storm:             return L"Thunderstorm";
+            case WeatherKind::StormHail:         return L"Storm with hail";
             default:                             return L"N/A";
             }
         }

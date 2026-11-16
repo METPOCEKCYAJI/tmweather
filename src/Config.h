@@ -8,12 +8,13 @@ enum class DisplayMode { Compact = 0, Medium = 1, Extended = 2 };
 enum class ScrollBehavior { TimeAndWheel = 0, AutoCarousel = 1 };
 enum class IconStyle {
     SkyCards = 0,
-    TopBar = 1,
-    BottomBar = 2,
-    GlyphTop = 3,
-    LeftPill = 4,
-    Watermark = 5,
-    IconTopLabelBottom = 6
+    SkyTransparent = 1,
+    TopBar = 2,
+    BottomBar = 3,
+    GlyphTop = 4,
+    LeftPill = 5,
+    Watermark = 6,
+    IconTopLabelBottom = 7
 };
 enum class BorderStyle {
     BorderAndFill = 0,
@@ -52,10 +53,10 @@ struct PluginConfig {
     DisplayMode display_mode = DisplayMode::Extended;
     int extended_slots = 4;
     ScrollBehavior scroll_mode = ScrollBehavior::TimeAndWheel;
-    IconStyle icon_style = IconStyle::SkyCards;
+    IconStyle icon_style = IconStyle::SkyTransparent;
     int vignette_level = 3; // 0=Off, 1=Weak, 2=Medium, 3=Strong, 4=Max
-    int bar_thickness = 1;  // 0=2px, 1=3px, 2=4px, 3=5px
-    int bar_contrast = 1;   // 0=Normal, 1=Bright, 2=Ultra
+    int bar_thickness = 2;  // 0=2px, 1=3px, 2=4px, 3=5px
+    int bar_contrast = 1;   // 0=Normal, 1=Gradient, 2=MaxChroma
     BorderStyle border_style = BorderStyle::TransparentClean;
 
     AlertMode alert_mode = AlertMode::Thermometer;
@@ -64,6 +65,7 @@ struct PluginConfig {
     int alert_threshold = 5;
 
     bool fill_tomorrow = true;
+    bool show_rain_drop = true;
     int refresh_minutes = 30;
 
     std::wstring EffectiveCityName() const {

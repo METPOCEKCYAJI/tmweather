@@ -6,123 +6,198 @@ using namespace Gdiplus;
 
 namespace {
 struct BarPalette {
-    Color sun, moon, cloud, rainBg, rainStr, stormEdge, stormBolt, snowBg, snowDot;
+    Color sun1, sun2, moon1, moon2, cl1, cl2, rain, snow, hailBg, hailDot, bolt, skyMid;
 };
 
-BarPalette GetBarPalette(int contrast, bool dark_mode) {
+BarPalette GetBarPalette(int chroma, bool dark_mode) {
     BarPalette p;
-    if (contrast == 2) {
-        p.sun       = Color(255, 255, 240, 0);
-        p.moon      = Color(255, 80, 165, 255);
-        p.cloud     = dark_mode ? Color(255, 241, 245, 249) : Color(255, 51, 65, 85);
-        p.rainBg    = Color(255, 29, 78, 216);
-        p.rainStr   = Color(255, 0, 235, 255);
-        p.stormEdge = Color(255, 139, 92, 246);
-        p.stormBolt = Color(255, 255, 240, 0);
-        p.snowBg    = Color(255, 0, 150, 230);
-        p.snowDot   = Color(255, 255, 255, 255);
-    } else if (contrast == 1) {
-        p.sun       = Color(255, 255, 224, 24);
-        p.moon      = Color(255, 96, 165, 250);
-        p.cloud     = dark_mode ? Color(255, 203, 213, 225) : Color(255, 82, 98, 118);
-        p.rainBg    = Color(255, 29, 78, 216);
-        p.rainStr   = Color(255, 56, 204, 255);
-        p.stormEdge = Color(255, 110, 108, 246);
-        p.stormBolt = Color(255, 255, 224, 24);
-        p.snowBg    = Color(255, 2, 132, 199);
-        p.snowDot   = Color(255, 235, 248, 255);
+    if (chroma == 2) {
+        p.sun1    = Color(255, 255, 240, 0);
+        p.sun2    = Color(255, 255, 107, 0);
+        p.moon1   = Color(255, 96, 165, 250);
+        p.moon2   = Color(255, 224, 242, 254);
+        p.cl1     = dark_mode ? Color(255, 255, 255, 255) : Color(255, 100, 116, 139);
+        p.cl2     = dark_mode ? Color(255, 71, 85, 105)   : Color(255, 51, 65, 85);
+        p.rain    = Color(255, 0, 234, 255);
+        p.snow    = dark_mode ? Color(255, 255, 255, 255) : Color(255, 2, 132, 199);
+        p.hailBg  = Color(115, 56, 189, 248);
+        p.hailDot = dark_mode ? Color(255, 255, 255, 255) : Color(255, 15, 23, 42);
+        p.bolt    = Color(255, 255, 240, 0);
+        p.skyMid  = Color(255, 125, 211, 252);
+    } else if (chroma == 1) {
+        p.sun1    = Color(255, 255, 225, 26);
+        p.sun2    = Color(255, 245, 158, 11);
+        p.moon1   = Color(255, 59, 130, 246);
+        p.moon2   = Color(255, 147, 197, 253);
+        p.cl1     = dark_mode ? Color(255, 203, 213, 225) : Color(255, 100, 116, 139);
+        p.cl2     = dark_mode ? Color(255, 71, 85, 105)   : Color(255, 51, 65, 85);
+        p.rain    = Color(255, 56, 189, 248);
+        p.snow    = dark_mode ? Color(255, 255, 255, 255) : Color(255, 71, 85, 105);
+        p.hailBg  = Color(100, 56, 189, 248);
+        p.hailDot = dark_mode ? Color(255, 255, 255, 255) : Color(255, 15, 23, 42);
+        p.bolt    = Color(255, 250, 204, 21);
+        p.skyMid  = p.cl1;
     } else {
-        p.sun       = Color(255, 245, 190, 24);
-        p.moon      = Color(255, 59, 130, 246);
-        p.cloud     = Color(255, 148, 163, 184);
-        p.rainBg    = Color(255, 30, 64, 175);
-        p.rainStr   = Color(255, 56, 189, 248);
-        p.stormEdge = Color(255, 99, 102, 241);
-        p.stormBolt = Color(255, 250, 204, 21);
-        p.snowBg    = Color(255, 3, 105, 161);
-        p.snowDot   = Color(255, 210, 236, 252);
+        p.sun1    = Color(255, 234, 179, 8);
+        p.sun2    = Color(255, 202, 138, 4);
+        p.moon1   = Color(255, 37, 99, 235);
+        p.moon2   = Color(255, 37, 99, 235);
+        p.cl1     = Color(255, 148, 163, 184);
+        p.cl2     = Color(255, 148, 163, 184);
+        p.rain    = Color(255, 37, 99, 235);
+        p.snow    = dark_mode ? Color(255, 226, 232, 240) : Color(255, 71, 85, 105);
+        p.hailBg  = Color(85, 100, 116, 139);
+        p.hailDot = dark_mode ? Color(255, 255, 255, 255) : Color(255, 15, 23, 42);
+        p.bolt    = Color(255, 250, 204, 21);
+        p.skyMid  = p.cl1;
     }
     return p;
 }
 
-void DrawHorizontalBar(Graphics& g, float x, float y, float w, float barH, WeatherKind kind, const BarPalette& pal) {
+void FillGrad3(Graphics& g, float x, float y, float w, float h, bool vert, Color c1, Color c2, Color c3) {
+    RectF rc(x, y, std::max(2.0f, w), std::max(2.0f, h));
+    LinearGradientBrush br(rc, c1, c3, vert ? LinearGradientModeVertical : LinearGradientModeHorizontal);
+    Color cols[3] = { c1, c2, c3 };
+    REAL pos[3] = { 0.0f, 0.5f, 1.0f };
+    br.SetInterpolationColors(cols, pos, 3);
+    g.FillRectangle(&br, rc);
+}
+
+void DrawWeatherBar(Graphics& g, float x, float y, float w, float h, bool vert, WeatherKind kind, int chroma, bool dark_mode) {
+    BarPalette pal = GetBarPalette(chroma, dark_mode);
+    float len = vert ? h : w;
+    float thick = vert ? w : h;
+    float s = thick / 3.0f;
+
     switch (kind) {
-    case WeatherKind::ClearDay: {
-        SolidBrush b(pal.sun);
-        g.FillRectangle(&b, x, y, w, barH);
+    case WeatherKind::ClearDay:
+        FillGrad3(g, x, y, w, h, vert, pal.sun1, pal.sun1, pal.sun2);
         break;
-    }
-    case WeatherKind::ClearNight: {
-        SolidBrush b(pal.moon);
-        g.FillRectangle(&b, x, y, w, barH);
+    case WeatherKind::ClearNight:
+        FillGrad3(g, x, y, w, h, vert, pal.moon1, pal.moon2, pal.moon1);
         break;
-    }
-    case WeatherKind::PartlyCloudyDay: {
-        SolidBrush b1(pal.sun), b2(pal.cloud);
-        g.FillRectangle(&b1, x, y, w * 0.45f, barH);
-        g.FillRectangle(&b2, x + w * 0.45f, y, w * 0.55f, barH);
+    case WeatherKind::PartlyCloudyDay:
+        FillGrad3(g, x, y, w, h, vert, pal.sun1, pal.skyMid, pal.cl2);
         break;
-    }
-    case WeatherKind::PartlyCloudyNight: {
-        SolidBrush b1(pal.moon), b2(pal.cloud);
-        g.FillRectangle(&b1, x, y, w * 0.45f, barH);
-        g.FillRectangle(&b2, x + w * 0.45f, y, w * 0.55f, barH);
+    case WeatherKind::PartlyCloudyNight:
+        FillGrad3(g, x, y, w, h, vert, pal.moon1, pal.moon2, pal.cl2);
         break;
-    }
     case WeatherKind::Cloudy:
-    case WeatherKind::Fog:
-    default: {
-        SolidBrush b(pal.cloud);
-        g.FillRectangle(&b, x, y, w, barH);
+    default:
+        FillGrad3(g, x, y, w, h, vert, pal.cl1, pal.cl1, pal.cl2);
+        break;
+    case WeatherKind::Fog: {
+        float t1 = std::max(1.0f, thick * 0.36f);
+        SolidBrush b1(Color(215, pal.cl1.GetR(), pal.cl1.GetG(), pal.cl1.GetB()));
+        SolidBrush b2(Color(215, pal.cl2.GetR(), pal.cl2.GetG(), pal.cl2.GetB()));
+        if (vert) {
+            g.FillRectangle(&b1, x, y, t1, h);
+            g.FillRectangle(&b2, x + w - t1, y + 2.0f, t1, std::max(2.0f, h - 4.0f));
+        } else {
+            g.FillRectangle(&b1, x, y, w, t1);
+            g.FillRectangle(&b2, x + 2.0f, y + h - t1, std::max(2.0f, w - 4.0f), t1);
+        }
         break;
     }
-    case WeatherKind::Rain: {
-        SolidBrush bBg(pal.rainBg), bStr(pal.rainStr);
-        g.FillRectangle(&bBg, x, y, w, barH);
-        for (float px = x + 2.0f; px < x + w; px += 7.0f) {
-            g.FillRectangle(&bStr, px, y, std::min(3.8f, x + w - px), barH);
+    case WeatherKind::Drizzle: {
+        SolidBrush br(pal.rain);
+        float r = std::max(1.0f, thick * 0.35f);
+        float step = std::max(5.5f, 7.5f * s);
+        for (float p = 3.0f; p < len - 2.0f; p += step) {
+            if (vert) g.FillEllipse(&br, x + w * 0.5f - r, y + p - r, r * 2.0f, r * 2.0f);
+            else      g.FillEllipse(&br, x + p - r, y + h * 0.5f - r, r * 2.0f, r * 2.0f);
+        }
+        break;
+    }
+    case WeatherKind::Rain:
+    case WeatherKind::Snow: {
+        SolidBrush br(kind == WeatherKind::Rain ? pal.rain : pal.snow);
+        float seg = std::max(3.5f, 5.0f * s);
+        float step = seg + std::max(2.5f, 3.0f * s);
+        for (float p = 0.0f; p < len - 1.5f; p += step) {
+            float cur = std::min(seg, len - p);
+            if (vert) g.FillRectangle(&br, x, y + p, w, cur);
+            else      g.FillRectangle(&br, x + p, y, cur, h);
+        }
+        break;
+    }
+    case WeatherKind::Sleet: {
+        SolidBrush brR(pal.rain), brS(pal.snow);
+        float seg = std::max(3.2f, 4.5f * s);
+        float step = seg + std::max(2.4f, 3.0f * s);
+        int idx = 0;
+        for (float p = 0.0f; p < len - 1.5f; p += step, ++idx) {
+            float cur = std::min(seg, len - p);
+            SolidBrush& br = (idx % 2 == 0) ? brR : brS;
+            if (vert) g.FillRectangle(&br, x, y + p, w, cur);
+            else      g.FillRectangle(&br, x + p, y, cur, h);
+        }
+        break;
+    }
+    case WeatherKind::Hail: {
+        SolidBrush bg(pal.hailBg), dot(pal.hailDot);
+        g.FillRectangle(&bg, x, y, w, h);
+        float r = std::max(1.1f, thick * 0.42f);
+        float step = std::max(5.5f, 7.5f * s);
+        for (float p = 4.0f; p < len - 2.0f; p += step) {
+            if (vert) g.FillEllipse(&dot, x + w * 0.5f - r, y + p - r, r * 2.0f, r * 2.0f);
+            else      g.FillEllipse(&dot, x + p - r, y + h * 0.5f - r, r * 2.0f, r * 2.0f);
         }
         break;
     }
     case WeatherKind::Storm: {
-        SolidBrush b1(pal.stormEdge), b2(pal.stormBolt);
-        g.FillRectangle(&b1, x, y, w, barH);
-        g.FillRectangle(&b2, x + w * 0.32f, y, w * 0.36f, barH);
+        Pen pen(pal.bolt, std::max(1.3f, thick * 0.38f));
+        pen.SetStartCap(LineCapRound);
+        pen.SetEndCap(LineCapRound);
+        pen.SetLineJoin(LineJoinRound);
+        float zw = std::max(4.0f, 5.0f * s);
+        float step = zw + std::max(3.0f, 4.0f * s);
+        for (float p = 1.0f; p < len - zw; p += step) {
+            PointF pts[3];
+            if (vert) {
+                pts[0] = {x + 0.6f, y + p};
+                pts[1] = {x + w - 0.6f, y + p + zw * 0.5f};
+                pts[2] = {x + 0.6f, y + p + zw};
+            } else {
+                pts[0] = {x + p, y + h - 0.6f};
+                pts[1] = {x + p + zw * 0.5f, y + 0.6f};
+                pts[2] = {x + p + zw, y + h - 0.6f};
+            }
+            g.DrawLines(&pen, pts, 3);
+        }
         break;
     }
-    case WeatherKind::Snow: {
-        SolidBrush bBg(pal.snowBg), bDot(pal.snowDot);
-        g.FillRectangle(&bBg, x, y, w, barH);
-        for (float px = x + 2.0f; px < x + w; px += 6.0f) {
-            g.FillRectangle(&bDot, px, y, std::min(2.8f, x + w - px), barH);
+    case WeatherKind::StormHail: {
+        Pen pen(pal.bolt, std::max(1.2f, thick * 0.36f));
+        pen.SetStartCap(LineCapRound);
+        pen.SetEndCap(LineCapRound);
+        pen.SetLineJoin(LineJoinRound);
+        SolidBrush dot(pal.hailDot);
+        float zw = std::max(3.8f, 4.4f * s);
+        float step = zw + std::max(3.0f, 3.6f * s);
+        float r = std::max(1.1f, thick * 0.38f);
+        int idx = 0;
+        for (float p = 1.0f; p < len - 3.5f; p += step, ++idx) {
+            if (idx % 2 == 0) {
+                PointF pts[3];
+                if (vert) {
+                    pts[0] = {x + 0.6f, y + p};
+                    pts[1] = {x + w - 0.6f, y + p + zw * 0.5f};
+                    pts[2] = {x + 0.6f, y + p + zw};
+                } else {
+                    pts[0] = {x + p, y + h - 0.6f};
+                    pts[1] = {x + p + zw * 0.5f, y + 0.6f};
+                    pts[2] = {x + p + zw, y + h - 0.6f};
+                }
+                g.DrawLines(&pen, pts, 3);
+            } else {
+                if (vert) g.FillEllipse(&dot, x + w * 0.5f - r, y + p + 2.0f - r, r * 2.0f, r * 2.0f);
+                else      g.FillEllipse(&dot, x + p + 2.0f - r, y + h * 0.5f - r, r * 2.0f, r * 2.0f);
+            }
         }
         break;
     }
     }
-}
-
-void DrawVerticalPill(Graphics& g, float x, float y, float w, float h, WeatherKind kind, const BarPalette& pal) {
-    float pw = std::max(2.0f, w);
-    float ph = std::max(6.0f, h);
-    float d = pw;
-    GraphicsPath p;
-    p.AddArc(x, y, d, d, 180, 180);
-    p.AddArc(x, y + ph - d, d, d, 0, 180);
-    p.CloseFigure();
-
-    Color c1 = pal.cloud, c2 = pal.cloud;
-    switch (kind) {
-    case WeatherKind::ClearDay:          c1 = c2 = pal.sun; break;
-    case WeatherKind::ClearNight:        c1 = c2 = pal.moon; break;
-    case WeatherKind::PartlyCloudyDay:   c1 = pal.sun; c2 = pal.cloud; break;
-    case WeatherKind::PartlyCloudyNight: c1 = pal.moon; c2 = pal.cloud; break;
-    case WeatherKind::Rain:              c1 = pal.rainStr; c2 = pal.rainBg; break;
-    case WeatherKind::Storm:             c1 = pal.stormBolt; c2 = pal.stormEdge; break;
-    case WeatherKind::Snow:              c1 = pal.snowDot; c2 = pal.snowBg; break;
-    default: break;
-    }
-    LinearGradientBrush br(RectF(x, y, pw, ph), c1, c2, LinearGradientModeVertical);
-    g.FillPath(&br, &p);
 }
 
 void DrawVignetteOverlay(Graphics& g, float x, float y, float w, float h, int level, Color baseTone) {
@@ -213,7 +288,7 @@ void IconRenderer::DrawWeatherGlyph(HDC hdc, float x, float y, float size, Weath
     Color moonCol = dark_mode ? Color(alpha, 124, 196, 255) : Color(alpha, 46, 118, 224);
     Color cloudCol = dark_mode ? Color(alpha, 245, 248, 252) : Color(alpha, 82, 98, 118);
     Color rainCol = dark_mode ? Color(alpha, 56, 189, 248) : Color(alpha, 14, 130, 226);
-    Color snowCol = dark_mode ? Color(alpha, 190, 238, 255) : Color(alpha, 38, 144, 235);
+    Color iceCol = dark_mode ? Color(alpha, 224, 242, 254) : Color(alpha, 2, 132, 199);
     Color fogCol = dark_mode ? Color(alpha, 190, 202, 218) : Color(alpha, 82, 98, 118);
 
     float s = std::max(4.0f, size) / 24.0f;
@@ -237,6 +312,24 @@ void IconRenderer::DrawWeatherGlyph(HDC hdc, float x, float y, float size, Weath
     default:
         DrawSolidCloud(g, x, y + 0.5f * s, size, cloudCol);
         break;
+    case WeatherKind::Fog: {
+        Pen pen(fogCol, std::max(1.2f, 2.4f * s));
+        pen.SetStartCap(LineCapRound);
+        pen.SetEndCap(LineCapRound);
+        g.DrawLine(&pen, x + 3.0f * s, y + 7.0f * s, x + 21.0f * s, y + 7.0f * s);
+        g.DrawLine(&pen, x + 2.0f * s, y + 12.0f * s, x + 18.5f * s, y + 12.0f * s);
+        g.DrawLine(&pen, x + 5.5f * s, y + 17.0f * s, x + 22.0f * s, y + 17.0f * s);
+        break;
+    }
+    case WeatherKind::Drizzle: {
+        DrawSolidCloud(g, x, y - 2.8f * s, size * 0.95f, cloudCol);
+        SolidBrush br(rainCol);
+        float r = std::max(1.1f, 1.5f * s);
+        g.FillEllipse(&br, x + 8.0f * s - r, y + 18.2f * s - r, r * 2, r * 2);
+        g.FillEllipse(&br, x + 15.0f * s - r, y + 18.2f * s - r, r * 2, r * 2);
+        g.FillEllipse(&br, x + 11.5f * s - r, y + 21.2f * s - r, r * 2, r * 2);
+        break;
+    }
     case WeatherKind::Rain: {
         DrawSolidCloud(g, x, y - 2.8f * s, size * 0.95f, cloudCol);
         Pen pen(rainCol, std::max(1.3f, 2.7f * s));
@@ -246,36 +339,58 @@ void IconRenderer::DrawWeatherGlyph(HDC hdc, float x, float y, float size, Weath
         g.DrawLine(&pen, x + 15.6f * s, y + 16.4f * s, x + 13.8f * s, y + 21.8f * s);
         break;
     }
+    case WeatherKind::Sleet: {
+        DrawSolidCloud(g, x, y - 2.8f * s, size * 0.95f, cloudCol);
+        Pen pen(rainCol, std::max(1.3f, 2.6f * s));
+        pen.SetStartCap(LineCapRound);
+        pen.SetEndCap(LineCapRound);
+        g.DrawLine(&pen, x + 8.2f * s, y + 16.5f * s, x + 6.5f * s, y + 21.8f * s);
+        DrawSnowflake(g, x + 16.0f * s, y + 19.3f * s, std::max(1.6f, 2.4f * s), iceCol, std::max(1.0f, 1.3f * s));
+        break;
+    }
     case WeatherKind::Snow: {
         DrawSolidCloud(g, x, y - 2.8f * s, size * 0.95f, cloudCol);
         float sr = std::max(1.6f, 2.4f * s);
         float sw = std::max(1.0f, 1.3f * s);
-        DrawSnowflake(g, x + 7.2f * s, y + 19.2f * s, sr, snowCol, sw);
-        DrawSnowflake(g, x + 12.2f * s, y + 20.6f * s, sr, snowCol, sw);
-        DrawSnowflake(g, x + 17.0f * s, y + 19.0f * s, sr, snowCol, sw);
+        DrawSnowflake(g, x + 7.5f * s, y + 19.2f * s, sr, iceCol, sw);
+        DrawSnowflake(g, x + 16.5f * s, y + 19.2f * s, sr, iceCol, sw);
+        break;
+    }
+    case WeatherKind::Hail: {
+        DrawSolidCloud(g, x, y - 2.8f * s, size * 0.95f, cloudCol);
+        SolidBrush brI(iceCol), brR(rainCol);
+        float r = std::max(1.4f, 2.1f * s);
+        g.FillEllipse(&brI, x + 7.5f * s - r, y + 19.0f * s - r, r * 2, r * 2);
+        g.FillEllipse(&brI, x + 16.5f * s - r, y + 19.0f * s - r, r * 2, r * 2);
+        g.FillEllipse(&brR, x + 12.0f * s - r * 0.85f, y + 21.2f * s - r * 0.85f, r * 1.7f, r * 1.7f);
         break;
     }
     case WeatherKind::Storm: {
         DrawSolidCloud(g, x, y - 2.8f * s, size * 0.95f, cloudCol);
         PointF pts[6] = {
-            {x + 12.8f * s, y + 13.4f * s},
-            {x + 9.0f * s,  y + 18.4f * s},
-            {x + 12.0f * s, y + 18.4f * s},
-            {x + 10.4f * s, y + 23.0f * s},
-            {x + 16.0f * s, y + 17.0f * s},
-            {x + 12.8f * s, y + 17.0f * s}
+            {x + 12.8f * s, y + 13.4f * s}, {x + 9.0f * s, y + 18.4f * s},
+            {x + 12.0f * s, y + 18.4f * s}, {x + 10.4f * s, y + 23.0f * s},
+            {x + 16.0f * s, y + 17.0f * s}, {x + 12.8f * s, y + 17.0f * s}
         };
         SolidBrush br(sunCol);
         g.FillPolygon(&br, pts, 6);
-        break;
-    }
-    case WeatherKind::Fog: {
-        Pen pen(fogCol, std::max(1.2f, 2.4f * s));
+        Pen pen(rainCol, std::max(1.2f, 2.1f * s));
         pen.SetStartCap(LineCapRound);
         pen.SetEndCap(LineCapRound);
-        g.DrawLine(&pen, x + 3.0f * s, y + 7.0f * s, x + 21.0f * s, y + 7.0f * s);
-        g.DrawLine(&pen, x + 2.0f * s, y + 12.0f * s, x + 18.5f * s, y + 12.0f * s);
-        g.DrawLine(&pen, x + 5.5f * s, y + 17.0f * s, x + 22.0f * s, y + 17.0f * s);
+        g.DrawLine(&pen, x + 6.8f * s, y + 17.0f * s, x + 5.6f * s, y + 20.6f * s);
+        break;
+    }
+    case WeatherKind::StormHail: {
+        DrawSolidCloud(g, x, y - 2.8f * s, size * 0.95f, cloudCol);
+        PointF pts[6] = {
+            {x + 11.5f * s, y + 13.4f * s}, {x + 8.0f * s, y + 18.4f * s},
+            {x + 10.8f * s, y + 18.4f * s}, {x + 9.4f * s, y + 23.0f * s},
+            {x + 14.4f * s, y + 17.0f * s}, {x + 11.5f * s, y + 17.0f * s}
+        };
+        SolidBrush br(sunCol), brI(iceCol);
+        g.FillPolygon(&br, pts, 6);
+        float r = std::max(1.4f, 2.1f * s);
+        g.FillEllipse(&brI, x + 17.2f * s - r, y + 19.2f * s - r, r * 2, r * 2);
         break;
     }
     }
@@ -291,10 +406,12 @@ void IconRenderer::DrawTileBackdrop(HDC hdc, float x, float y, float w, float h,
     g.SetClip(rc);
 
     float s = h / 30.0f;
-    BarPalette pal = GetBarPalette(cfg.bar_contrast, dark_mode);
     float barPx = (float)(2 + std::clamp(cfg.bar_thickness, 0, 3)) * s;
 
-    if (cfg.icon_style != IconStyle::SkyCards) {
+    bool isSkyOld = (cfg.icon_style == IconStyle::SkyCards);
+    bool isSkyNew = (cfg.icon_style == IconStyle::SkyTransparent);
+
+    if (!isSkyOld && !isSkyNew) {
         if (draw_bg) {
             Color bg = dark_mode ? Color(18, 255, 255, 255) : Color(180, 255, 255, 255);
             SolidBrush bgBr(bg);
@@ -303,16 +420,16 @@ void IconRenderer::DrawTileBackdrop(HDC hdc, float x, float y, float w, float h,
 
         if (cfg.icon_style == IconStyle::TopBar) {
             float padX = 4.0f * s;
-            DrawHorizontalBar(g, x + padX, y, std::max(2.0f, w - padX * 2.0f), barPx, kind, pal);
+            DrawWeatherBar(g, x + padX, y, std::max(4.0f, w - padX * 2.0f), barPx, false, kind, cfg.bar_contrast, dark_mode);
         } else if (cfg.icon_style == IconStyle::BottomBar) {
             float padX = 4.0f * s;
-            DrawHorizontalBar(g, x + padX, y + h - barPx, std::max(2.0f, w - padX * 2.0f), barPx, kind, pal);
+            DrawWeatherBar(g, x + padX, y + h - barPx, std::max(4.0f, w - padX * 2.0f), barPx, false, kind, cfg.bar_contrast, dark_mode);
         } else if (cfg.icon_style == IconStyle::LeftPill) {
-            float padY = std::max(2.0f, 4.5f * s);
-            DrawVerticalPill(g, x + 2.5f * s, y + padY, barPx, std::max(6.0f, h - padY * 2.0f), kind, pal);
+            float padY = std::max(2.0f, 4.0f * s);
+            DrawWeatherBar(g, x + 2.5f * s, y + padY, barPx, std::max(6.0f, h - padY * 2.0f), true, kind, cfg.bar_contrast, dark_mode);
         } else if (cfg.icon_style == IconStyle::Watermark) {
             float gSize = std::min(w, h) * 0.90f;
-            DrawWeatherGlyph(hdc, x + (w - gSize) * 0.5f, y + (h - gSize) * 0.5f, gSize, kind, dark_mode, 175);
+            DrawWeatherGlyph(hdc, x + (w - gSize) * 0.5f, y + (h - gSize) * 0.5f, gSize, kind, dark_mode, 185);
             Color base = dark_mode ? Color(255, 12, 14, 18) : Color(255, 238, 242, 246);
             DrawVignetteOverlay(g, x, y, w, h, cfg.vignette_level, base);
         }
@@ -321,23 +438,36 @@ void IconRenderer::DrawTileBackdrop(HDC hdc, float x, float y, float w, float h,
         return;
     }
 
-    // Style 0: Sky Atmosphere Cards + adjustable radial vignette
-    Color c1(255, 71, 85, 105), c2(255, 30, 41, 59);
-    switch (kind) {
-    case WeatherKind::ClearDay:          c1 = Color(255, 204, 98, 10); c2 = Color(255, 78, 30, 5); break;
-    case WeatherKind::ClearNight:        c1 = Color(255, 30, 27, 75);  c2 = Color(255, 9, 13, 24); break;
-    case WeatherKind::PartlyCloudyDay:   c1 = Color(255, 168, 76, 14); c2 = Color(255, 30, 41, 59); break;
-    case WeatherKind::PartlyCloudyNight: c1 = Color(255, 30, 41, 82);  c2 = Color(255, 30, 41, 59); break;
-    case WeatherKind::Cloudy:
-    case WeatherKind::Fog:
-    default:                             c1 = Color(255, 75, 88, 106); c2 = Color(255, 30, 41, 59); break;
-    case WeatherKind::Rain:              c1 = Color(255, 29, 78, 216); c2 = Color(255, 15, 23, 42); break;
-    case WeatherKind::Storm:             c1 = Color(255, 62, 52, 175); c2 = Color(255, 15, 23, 42); break;
-    case WeatherKind::Snow:              c1 = Color(255, 2, 132, 199); c2 = Color(255, 30, 41, 59); break;
+    if (isSkyOld) {
+        Color c1(255, 71, 85, 105), c2(255, 30, 41, 59);
+        switch (kind) {
+        case WeatherKind::ClearDay:          c1 = Color(255, 204, 98, 10); c2 = Color(255, 78, 30, 5); break;
+        case WeatherKind::ClearNight:        c1 = Color(255, 30, 27, 75);  c2 = Color(255, 9, 13, 24); break;
+        case WeatherKind::PartlyCloudyDay:   c1 = Color(255, 168, 76, 14); c2 = Color(255, 30, 41, 59); break;
+        case WeatherKind::PartlyCloudyNight: c1 = Color(255, 30, 41, 82);  c2 = Color(255, 30, 41, 59); break;
+        case WeatherKind::Cloudy:
+        case WeatherKind::Fog:
+        default:                             c1 = Color(255, 75, 88, 106); c2 = Color(255, 30, 41, 59); break;
+        case WeatherKind::Drizzle:           c1 = Color(255, 30, 64, 175); c2 = Color(255, 30, 41, 59); break;
+        case WeatherKind::Rain:              c1 = Color(255, 29, 78, 216); c2 = Color(255, 15, 23, 42); break;
+        case WeatherKind::Sleet:             c1 = Color(255, 29, 78, 216); c2 = Color(255, 3, 105, 161); break;
+        case WeatherKind::Snow:              c1 = Color(255, 2, 132, 199); c2 = Color(255, 30, 41, 59); break;
+        case WeatherKind::Hail:              c1 = Color(255, 15, 118, 110);c2 = Color(255, 30, 41, 59); break;
+        case WeatherKind::Storm:             c1 = Color(255, 62, 52, 175); c2 = Color(255, 15, 23, 42); break;
+        case WeatherKind::StormHail:         c1 = Color(255, 76, 29, 149); c2 = Color(255, 15, 23, 42); break;
+        }
+        LinearGradientBrush bgBr(rc, c1, c2, LinearGradientModeForwardDiagonal);
+        g.FillRectangle(&bgBr, rc);
+    } else if (draw_bg) {
+        Color bg = dark_mode ? Color(18, 255, 255, 255) : Color(180, 255, 255, 255);
+        SolidBrush bgBr(bg);
+        g.FillRectangle(&bgBr, rc);
     }
 
-    LinearGradientBrush bgBr(rc, c1, c2, LinearGradientModeForwardDiagonal);
-    g.FillRectangle(&bgBr, rc);
+    BYTE cloudA = isSkyNew ? 140 : 155;
+    Color clCol = (isSkyNew && !dark_mode) ? Color(cloudA, 100, 116, 139) : Color(cloudA, 226, 232, 240);
+    Color iceCol = (isSkyNew && !dark_mode) ? Color(235, 2, 132, 199) : Color(235, 224, 242, 254);
+    Color moonCol = (isSkyNew && !dark_mode) ? Color(220, 37, 99, 235) : Color(220, 147, 197, 253);
 
     switch (kind) {
     case WeatherKind::ClearDay: {
@@ -353,7 +483,7 @@ void IconRenderer::DrawTileBackdrop(HDC hdc, float x, float y, float w, float h,
         inner.AddEllipse(cx + 4.5f * s, cy - 1.2f * s, 11.5f * s, 11.5f * s);
         Region reg(&outer);
         reg.Exclude(&inner);
-        SolidBrush moonBr(Color(210, 147, 197, 253));
+        SolidBrush moonBr(moonCol);
         g.FillRegion(&moonBr, &reg);
         break;
     }
@@ -361,35 +491,49 @@ void IconRenderer::DrawTileBackdrop(HDC hdc, float x, float y, float w, float h,
         SolidBrush sunBr(Color(215, 251, 191, 36));
         float r = 8.2f * s;
         g.FillEllipse(&sunBr, x - r * 0.32f, y - r * 0.42f, r * 2.0f, r * 2.0f);
-        SolidBrush clBr(Color(145, 226, 232, 240));
+        SolidBrush clBr(clCol);
         g.FillEllipse(&clBr, x + w * 0.36f, y + h * 0.44f, w * 0.46f, h * 0.72f);
         g.FillEllipse(&clBr, x + w * 0.58f, y + h * 0.34f, w * 0.54f, h * 0.85f);
         break;
     }
     case WeatherKind::PartlyCloudyNight: {
-        SolidBrush moonBr(Color(195, 147, 197, 253));
-        g.FillEllipse(&moonBr, x + 2.0f * s, y + 1.5f * s, 7.5f * s, 7.5f * s);
-        SolidBrush clBr(Color(140, 203, 213, 225));
-        g.FillEllipse(&clBr, x + w * 0.42f, y + h * 0.46f, w * 0.45f, h * 0.72f);
+        GraphicsPath outer, inner;
+        outer.AddEllipse(x + 1.5f * s, y + 1.0f * s, 9.5f * s, 9.5f * s);
+        inner.AddEllipse(x + 4.8f * s, y + 0.2f * s, 8.2f * s, 8.2f * s);
+        Region reg(&outer);
+        reg.Exclude(&inner);
+        SolidBrush moonBr(moonCol);
+        g.FillRegion(&moonBr, &reg);
+        SolidBrush clBr(clCol);
+        g.FillEllipse(&clBr, x + w * 0.40f, y + h * 0.46f, w * 0.45f, h * 0.72f);
         g.FillEllipse(&clBr, x + w * 0.62f, y + h * 0.36f, w * 0.50f, h * 0.85f);
         break;
     }
     case WeatherKind::Cloudy: {
-        SolidBrush clBr(Color(125, 180, 195, 212));
+        SolidBrush clBr(clCol);
         g.FillEllipse(&clBr, x - 3.0f * s, y + h * 0.52f, w * 0.55f, h * 0.72f);
         g.FillEllipse(&clBr, x + w * 0.34f, y + h * 0.38f, w * 0.74f, h * 0.86f);
         break;
     }
     case WeatherKind::Fog: {
-        Pen fogPen(Color(145, 226, 232, 240), std::max(1.4f, 2.2f * s));
+        Pen fogPen(clCol, std::max(1.4f, 2.2f * s));
         fogPen.SetStartCap(LineCapRound);
         fogPen.SetEndCap(LineCapRound);
         g.DrawLine(&fogPen, x + 3.0f * s, y + 4.0f * s, x + w - 8.0f * s, y + 4.0f * s);
         g.DrawLine(&fogPen, x + 6.0f * s, y + h - 4.0f * s, x + w - 3.0f * s, y + h - 4.0f * s);
         break;
     }
+    case WeatherKind::Drizzle: {
+        SolidBrush dBr(Color(215, 56, 189, 248));
+        float r = std::max(1.3f, 1.8f * s);
+        g.FillEllipse(&dBr, x + 6.0f * s, y + 4.0f * s, r * 2, r * 2);
+        g.FillEllipse(&dBr, x + w - 8.5f * s, y + 5.0f * s, r * 2, r * 2);
+        g.FillEllipse(&dBr, x + 7.5f * s, y + h - 7.0f * s, r * 2, r * 2);
+        g.FillEllipse(&dBr, x + w - 9.0f * s, y + h - 7.0f * s, r * 2, r * 2);
+        break;
+    }
     case WeatherKind::Rain: {
-        Pen rainPen(Color(205, 96, 185, 255), std::max(1.5f, 2.0f * s));
+        Pen rainPen(Color(215, 56, 189, 248), std::max(1.5f, 2.0f * s));
         rainPen.SetStartCap(LineCapRound);
         rainPen.SetEndCap(LineCapRound);
         g.DrawLine(&rainPen, x + 9.0f * s, y + 2.0f * s, x + 4.0f * s, y + 12.0f * s);
@@ -397,32 +541,67 @@ void IconRenderer::DrawTileBackdrop(HDC hdc, float x, float y, float w, float h,
         g.DrawLine(&rainPen, x + w - 4.0f * s, y + h - 10.0f * s, x + w - 8.0f * s, y + h - 2.0f * s);
         break;
     }
-    case WeatherKind::Storm: {
-        PointF pts[6] = {
-            {x + w - 9.0f * s,  y + 1.5f * s},
-            {x + w - 14.0f * s, y + 13.0f * s},
-            {x + w - 9.0f * s,  y + 13.0f * s},
-            {x + w - 12.0f * s, y + 24.5f * s},
-            {x + w - 3.0f * s,  y + 10.5f * s},
-            {x + w - 8.0f * s,  y + 10.5f * s}
-        };
-        SolidBrush boltBr(Color(230, 250, 204, 21));
-        g.FillPolygon(&boltBr, pts, 6);
+    case WeatherKind::Sleet: {
+        Pen rainPen(Color(215, 56, 189, 248), std::max(1.5f, 2.0f * s));
+        rainPen.SetStartCap(LineCapRound);
+        rainPen.SetEndCap(LineCapRound);
+        g.DrawLine(&rainPen, x + 8.5f * s, y + 2.0f * s, x + 4.0f * s, y + 11.5f * s);
+        g.DrawLine(&rainPen, x + 10.5f * s, y + h - 10.0f * s, x + 6.5f * s, y + h - 2.0f * s);
+        float sr = std::max(2.0f, 2.8f * s);
+        DrawSnowflake(g, x + w - 7.5f * s, y + 5.8f * s, sr, iceCol, std::max(1.0f, 1.2f * s));
+        DrawSnowflake(g, x + w - 8.0f * s, y + h - 5.8f * s, sr * 0.9f, iceCol, std::max(1.0f, 1.2f * s));
         break;
     }
     case WeatherKind::Snow: {
-        Color snCol(235, 230, 248, 255);
         float r = std::max(2.0f, 3.0f * s);
         float sw = std::max(1.0f, 1.2f * s);
-        DrawSnowflake(g, x + 6.5f * s, y + 5.5f * s, r, snCol, sw);
-        DrawSnowflake(g, x + w - 7.5f * s, y + 6.0f * s, r, snCol, sw);
-        DrawSnowflake(g, x + 7.5f * s, y + h - 6.0f * s, r * 0.85f, snCol, sw);
-        DrawSnowflake(g, x + w - 8.0f * s, y + h - 6.0f * s, r * 0.85f, snCol, sw);
+        DrawSnowflake(g, x + 6.5f * s, y + 5.5f * s, r, iceCol, sw);
+        DrawSnowflake(g, x + w - 7.5f * s, y + 6.0f * s, r, iceCol, sw);
+        DrawSnowflake(g, x + 7.5f * s, y + h - 6.0f * s, r * 0.85f, iceCol, sw);
+        DrawSnowflake(g, x + w - 8.0f * s, y + h - 6.0f * s, r * 0.85f, iceCol, sw);
+        break;
+    }
+    case WeatherKind::Hail: {
+        SolidBrush hBr(iceCol);
+        float r = std::max(1.7f, 2.3f * s);
+        g.FillEllipse(&hBr, x + 4.5f * s, y + 3.5f * s, r * 2, r * 2);
+        g.FillEllipse(&hBr, x + w - 8.5f * s, y + 3.5f * s, r * 2, r * 2);
+        g.FillEllipse(&hBr, x + 5.5f * s, y + h - 7.5f * s, r * 1.9f, r * 1.9f);
+        g.FillEllipse(&hBr, x + w - 9.0f * s, y + h - 7.5f * s, r * 1.9f, r * 1.9f);
+        break;
+    }
+    case WeatherKind::Storm: {
+        PointF pts[6] = {
+            {x + w - 9.0f * s, y + 1.5f * s}, {x + w - 14.0f * s, y + 13.0f * s},
+            {x + w - 9.0f * s, y + 13.0f * s}, {x + w - 12.0f * s, y + 24.5f * s},
+            {x + w - 3.0f * s, y + 10.5f * s}, {x + w - 8.0f * s, y + 10.5f * s}
+        };
+        SolidBrush boltBr(Color(230, 250, 204, 21));
+        g.FillPolygon(&boltBr, pts, 6);
+        Pen rainPen(Color(200, 56, 189, 248), std::max(1.4f, 1.8f * s));
+        rainPen.SetStartCap(LineCapRound);
+        rainPen.SetEndCap(LineCapRound);
+        g.DrawLine(&rainPen, x + 8.0f * s, y + 2.5f * s, x + 4.5f * s, y + 10.5f * s);
+        break;
+    }
+    case WeatherKind::StormHail: {
+        PointF pts[6] = {
+            {x + w - 9.0f * s, y + 1.5f * s}, {x + w - 14.0f * s, y + 13.0f * s},
+            {x + w - 9.0f * s, y + 13.0f * s}, {x + w - 12.0f * s, y + 24.5f * s},
+            {x + w - 3.0f * s, y + 10.5f * s}, {x + w - 8.0f * s, y + 10.5f * s}
+        };
+        SolidBrush boltBr(Color(230, 250, 204, 21)), hBr(iceCol);
+        g.FillPolygon(&boltBr, pts, 6);
+        float r = std::max(1.6f, 2.2f * s);
+        g.FillEllipse(&hBr, x + 4.5f * s, y + 4.0f * s, r * 2, r * 2);
+        g.FillEllipse(&hBr, x + 5.5f * s, y + h - 7.5f * s, r * 1.9f, r * 1.9f);
         break;
     }
     }
 
-    DrawVignetteOverlay(g, x, y, w, h, cfg.vignette_level, Color(255, 11, 14, 19));
+    Color vigBase = isSkyOld ? Color(255, 11, 14, 19)
+                             : (dark_mode ? Color(255, 12, 13, 15) : Color(255, 238, 242, 246));
+    DrawVignetteOverlay(g, x, y, w, h, cfg.vignette_level, vigBase);
     g.ResetClip();
 }
 
@@ -431,7 +610,7 @@ void IconRenderer::DrawRainDrop(HDC hdc, float x, float y, float size, bool dark
     g.SetSmoothingMode(SmoothingModeAntiAlias);
     g.SetPixelOffsetMode(PixelOffsetModeHighQuality);
 
-    Color col = dark_mode ? Color(255, 96, 185, 255) : Color(255, 14, 130, 226);
+    Color col = dark_mode ? Color(255, 56, 189, 248) : Color(255, 14, 130, 226);
     float s = std::max(4.0f, size) / 24.0f;
     GraphicsPath path;
     path.AddBezier(x + 12.0f * s, y + 2.0f * s,
@@ -482,7 +661,6 @@ void IconRenderer::DrawTempAlert(HDC hdc, float x, float y, float size, int dir,
         return;
     }
 
-    // Thermometer
     SolidBrush bgBr(dark_mode ? Color(210, 20, 24, 30) : Color(230, 255, 255, 255));
     g.FillEllipse(&bgBr, x + 3.0f * s, y + 6.0f * s, 6.0f * s, 5.6f * s);
     g.FillRectangle(&bgBr, x + 4.2f * s, y + 1.0f * s, 3.6f * s, 6.5f * s);

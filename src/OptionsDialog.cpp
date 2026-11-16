@@ -36,9 +36,9 @@ WeatherSnapshot MakeSampleSnapshot(const PluginConfig& cfg) {
         { DayPart::Night,   true,  false, 16, 4.0,  WeatherKind::ClearNight },
         { DayPart::Morning, false, true,  17, -2.0, WeatherKind::Snow }
     };
-    s.daily = {
-        { 0, 16, 9.0 },
-        { 1, 17, 1.0 }
+    s.alert_segments = {
+        { 12, 1, DayPart::Night, 1.0 },
+        { 24, 1, DayPart::Day,  14.0 }
     };
     return s;
 }
@@ -73,7 +73,7 @@ void ReadSettingsFromControls(HWND hDlg, DialogState* st, PluginConfig& dst) {
     dst.display_mode = static_cast<DisplayMode>(std::clamp((int)SendDlgItemMessageW(hDlg, IDC_COMBO_MODE, CB_GETCURSEL, 0, 0), 0, 2));
     dst.extended_slots = (SendDlgItemMessageW(hDlg, IDC_COMBO_EXT_SLOTS, CB_GETCURSEL, 0, 0) == 0) ? 3 : 4;
     dst.scroll_mode = (SendDlgItemMessageW(hDlg, IDC_COMBO_SCROLL, CB_GETCURSEL, 0, 0) == 1) ? ScrollBehavior::AutoCarousel : ScrollBehavior::TimeAndWheel;
-    dst.icon_style = static_cast<IconStyle>(std::clamp((int)SendDlgItemMessageW(hDlg, IDC_COMBO_ICON_STYLE, CB_GETCURSEL, 0, 0), 0, 6));
+    dst.icon_style = static_cast<IconStyle>(std::clamp((int)SendDlgItemMessageW(hDlg, IDC_COMBO_ICON_STYLE, CB_GETCURSEL, 0, 0), 0, 7));
     dst.vignette_level = std::clamp((int)SendDlgItemMessageW(hDlg, IDC_COMBO_VIGNETTE, CB_GETCURSEL, 0, 0), 0, 4);
     dst.bar_thickness = std::clamp((int)SendDlgItemMessageW(hDlg, IDC_COMBO_BAR_THICK, CB_GETCURSEL, 0, 0), 0, 3);
     dst.bar_contrast = std::clamp((int)SendDlgItemMessageW(hDlg, IDC_COMBO_BAR_CONTRAST, CB_GETCURSEL, 0, 0), 0, 2);
@@ -91,6 +91,7 @@ void ReadSettingsFromControls(HWND hDlg, DialogState* st, PluginConfig& dst) {
     dst.alert_threshold = okT ? std::clamp(at, 1, 40) : 5;
 
     dst.fill_tomorrow = (SendDlgItemMessageW(hDlg, IDC_CHK_FILL_TOMORROW, BM_GETCHECK, 0, 0) == BST_CHECKED);
+    dst.show_rain_drop = (SendDlgItemMessageW(hDlg, IDC_CHK_SHOW_RAIN, BM_GETCHECK, 0, 0) == BST_CHECKED);
 
     BOOL okR = FALSE;
     int mins = (int)GetDlgItemInt(hDlg, IDC_EDIT_REFRESH, &okR, FALSE);
@@ -120,13 +121,14 @@ void ApplyLanguageTexts(HWND hDlg, LangMode lang, DialogState* st) {
     SetDlgItemTextW(hDlg, IDC_LBL_EXT_SLOTS, ru ? L"\u041F\u043B\u0438\u0442\u043A\u0438 / \u0421\u043A\u0440\u043E\u043B\u043B:" : L"Slots / Scroll:");
     SetDlgItemTextW(hDlg, IDC_LBL_ICON_STYLE, ru ? L"\u0421\u0442\u0438\u043B\u044C:" : L"Style:");
     SetDlgItemTextW(hDlg, IDC_LBL_VIGNETTE, ru ? L"\u0412\u0438\u043D\u044C\u0435\u0442\u043A\u0430:" : L"Vignette:");
-    SetDlgItemTextW(hDlg, IDC_LBL_BAR_OPT, ru ? L"\u041F\u043E\u043B\u043E\u0441\u044B (\u0422\u043E\u043B\u0449. / \u0426\u0432\u0435\u0442):" : L"Bars (Size / Color):");
+    SetDlgItemTextW(hDlg, IDC_LBL_BAR_OPT, ru ? L"\u041F\u043E\u043B\u043E\u0441\u044B (\u0422\u043E\u043B\u0449. / \u0426\u0432\u0435\u0442\u043D.):" : L"Bars (Size / Chroma):");
     SetDlgItemTextW(hDlg, IDC_LBL_BORDER, ru ? L"\u0420\u0430\u043C\u043A\u0430 \u0438 \u0444\u043E\u043D:" : L"Border & Bg:");
     SetDlgItemTextW(hDlg, IDC_LBL_ALERT, ru ? L"\u041F\u0435\u0440\u0435\u043F\u0430\u0434 \u0442\u0435\u043C\u043F.:" : L"Temp Alert:");
     SetDlgItemTextW(hDlg, IDC_LBL_ALERT_DAYS, ru ? L"\u0434\u043D." : L"d.");
     SetDlgItemTextW(hDlg, IDC_LBL_ALERT_DEG, L"\u00B0");
     SetDlgItemTextW(hDlg, IDC_LBL_ALERT_POS, ru ? L"\u0423\u0433\u043E\u043B \u043F\u0435\u0440\u0435\u043F\u0430\u0434\u0430:" : L"Alert Position:");
-    SetDlgItemTextW(hDlg, IDC_CHK_FILL_TOMORROW, ru ? L"\u0414\u043E\u043F\u043E\u043B\u043D\u044F\u0442\u044C \u0437\u0430\u0432\u0442\u0440\u0430\u0448\u043D\u0438\u043C\u0438 \u0438\u043D\u0442\u0435\u0440\u0432\u0430\u043B\u0430\u043C\u0438" : L"Fill with tomorrow slots");
+    SetDlgItemTextW(hDlg, IDC_CHK_FILL_TOMORROW, ru ? L"\u041F\u0440\u043E\u0433\u043D\u043E\u0437 \u043D\u0430 \u0437\u0430\u0432\u0442\u0440\u0430" : L"Tomorrow slots");
+    SetDlgItemTextW(hDlg, IDC_CHK_SHOW_RAIN, ru ? L"\u041A\u0430\u043F\u043B\u044F \u0441\u043A\u043E\u0440\u044B\u0445 \u043E\u0441\u0430\u0434\u043A\u043E\u0432" : L"Rain drop badge");
     SetDlgItemTextW(hDlg, IDC_LBL_REFRESH, ru ? L"\u041E\u0431\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u0435 (\u043C\u0438\u043D):" : L"Refresh (min):");
     SetDlgItemTextW(hDlg, IDOK, L"OK");
     SetDlgItemTextW(hDlg, IDCANCEL, ru ? L"\u041E\u0442\u043C\u0435\u043D\u0430" : L"Cancel");
@@ -172,21 +174,23 @@ void ApplyLanguageTexts(HWND hDlg, LangMode lang, DialogState* st) {
 
     refillCombo(IDC_COMBO_ICON_STYLE,
         ru ? std::vector<const wchar_t*>{
-                L"\u0410\u0442\u043C\u043E\u0441\u0444\u0435\u0440\u043D\u044B\u0435 \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0438 (1\u0410)",
-                L"\u041F\u043E\u043B\u043E\u0441\u0430 \u043F\u043E\u0433\u043E\u0434\u044B \u0441\u0432\u0435\u0440\u0445\u0443 (A)",
-                L"\u041F\u043E\u043B\u043E\u0441\u0430 \u043F\u043E\u0433\u043E\u0434\u044B \u0441\u043D\u0438\u0437\u0443 (B)",
-                L"\u0417\u043D\u0430\u0447\u043E\u043A + \u0432\u0440\u0435\u043C\u044F \u0441\u0432\u0435\u0440\u0445\u0443 (C)",
-                L"\u041C\u0435\u0442\u043A\u0430 \u0441\u043B\u0435\u0432\u0430 \u043E\u0442 \u043A\u043E\u043B\u043E\u043D\u043A\u0438 (D)",
-                L"\u041A\u0440\u0443\u043F\u043D\u044B\u0439 \u0437\u043D\u0430\u0447\u043E\u043A \u043D\u0430 \u0444\u043E\u043D\u0435 (E)",
-                L"\u0417\u043D\u0430\u0447\u043E\u043A 16x16 \u0441\u0432\u0435\u0440\u0445\u0443 (F)"}
+                L"0. \u0410\u0442\u043C\u043E\u0441\u0444\u0435\u0440\u043D\u0430\u044F \u0441\u0442\u0430\u0440\u0430\u044F (\u0446\u0432\u0435\u0442\u043D\u043E\u0439 \u0444\u043E\u043D)",
+                L"1. \u0410\u0442\u043C\u043E\u0441\u0444\u0435\u0440\u043D\u0430\u044F \u043D\u043E\u0432\u0430\u044F (\u043F\u0440\u043E\u0437\u0440\u0430\u0447\u043D\u0430\u044F)",
+                L"2. \u041F\u043E\u043B\u043E\u0441\u0430 \u0441\u0432\u0435\u0440\u0445\u0443",
+                L"3. \u041F\u043E\u043B\u043E\u0441\u0430 \u0441\u043D\u0438\u0437\u0443",
+                L"4. \u0417\u043D\u0430\u0447\u043E\u043A + \u0432\u0440\u0435\u043C\u044F \u0441\u0432\u0435\u0440\u0445\u0443",
+                L"5. \u0412\u0435\u0440\u0442\u0438\u043A\u0430\u043B\u044C\u043D\u0430\u044F \u043F\u043E\u043B\u043E\u0441\u0430 \u0441\u043B\u0435\u0432\u0430",
+                L"6. \u041A\u0440\u0443\u043F\u043D\u044B\u0439 \u0437\u043D\u0430\u0447\u043E\u043A \u043D\u0430 \u0444\u043E\u043D\u0435",
+                L"7. \u0417\u043D\u0430\u0447\u043E\u043A 16x16 \u0441\u0432\u0435\u0440\u0445\u0443"}
            : std::vector<const wchar_t*>{
-                L"Sky Atmosphere Cards (1A)",
-                L"Top Weather Bar (A)",
-                L"Bottom Weather Bar (B)",
-                L"Glyph + Time on Top (C)",
-                L"Left Weather Pill (D)",
-                L"Large Watermark Icon (E)",
-                L"16x16 Icon Top + Temp (F)"},
+                L"0. Sky Cards (colored bg)",
+                L"1. Sky Transparent (no dark bg)",
+                L"2. Top Weather Bar",
+                L"3. Bottom Weather Bar",
+                L"4. Glyph + Time on Top",
+                L"5. Vertical Bar Left",
+                L"6. Large Watermark Icon",
+                L"7. 16x16 Icon Top + Temp"},
         (int)st->cfg.icon_style);
 
     refillCombo(IDC_COMBO_VIGNETTE,
@@ -200,8 +204,8 @@ void ApplyLanguageTexts(HWND hDlg, LangMode lang, DialogState* st) {
         st->cfg.bar_thickness);
 
     refillCombo(IDC_COMBO_BAR_CONTRAST,
-        ru ? std::vector<const wchar_t*>{L"\u041E\u0431\u044B\u0447\u043D\u0430\u044F", L"\u042F\u0440\u043A\u0430\u044F", L"\u0423\u043B\u044C\u0442\u0440\u0430"}
-           : std::vector<const wchar_t*>{L"Normal", L"Bright", L"Ultra"},
+        ru ? std::vector<const wchar_t*>{L"\u041E\u0431\u044B\u0447\u043D\u0430\u044F", L"\u042F\u0440\u043A\u0438\u0439 \u0433\u0440\u0430\u0434\u0438\u0435\u043D\u0442", L"\u041C\u0430\u043A\u0441. \u0446\u0432\u0435\u0442\u043D\u043E\u0441\u0442\u044C"}
+           : std::vector<const wchar_t*>{L"Normal", L"Rich Gradient", L"Max Chroma"},
         st->cfg.bar_contrast);
 
     refillCombo(IDC_COMBO_BORDER,
@@ -248,8 +252,8 @@ void UpdateControlStates(HWND hDlg) {
     EnableWindow(GetDlgItem(hDlg, IDC_CHK_FILL_TOMORROW), mode != 0);
 
     int sty = (int)SendDlgItemMessageW(hDlg, IDC_COMBO_ICON_STYLE, CB_GETCURSEL, 0, 0);
-    EnableWindow(GetDlgItem(hDlg, IDC_COMBO_VIGNETTE), sty == 0 || sty == 5);
-    bool isBar = (sty == 1 || sty == 2 || sty == 4);
+    EnableWindow(GetDlgItem(hDlg, IDC_COMBO_VIGNETTE), sty == 0 || sty == 1 || sty == 6);
+    bool isBar = (sty == 2 || sty == 3 || sty == 5);
     EnableWindow(GetDlgItem(hDlg, IDC_COMBO_BAR_THICK), isBar);
     EnableWindow(GetDlgItem(hDlg, IDC_COMBO_BAR_CONTRAST), isBar);
 
@@ -290,6 +294,7 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) {
         SetDlgItemInt(hDlg, IDC_EDIT_ALERT_DAYS, st->cfg.alert_days, FALSE);
         SetDlgItemInt(hDlg, IDC_EDIT_ALERT_DIFF, st->cfg.alert_threshold, FALSE);
         SendDlgItemMessageW(hDlg, IDC_CHK_FILL_TOMORROW, BM_SETCHECK, st->cfg.fill_tomorrow ? BST_CHECKED : BST_UNCHECKED, 0);
+        SendDlgItemMessageW(hDlg, IDC_CHK_SHOW_RAIN, BM_SETCHECK, st->cfg.show_rain_drop ? BST_CHECKED : BST_UNCHECKED, 0);
         SetDlgItemInt(hDlg, IDC_EDIT_REFRESH, st->cfg.refresh_minutes, FALSE);
 
         GeoCandidate cur;
@@ -326,9 +331,9 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) {
             int dpi = GetDeviceCaps(dis->hDC, LOGPIXELSX);
             int targetH = MulDiv(30, dpi, 96);
             targetH = std::min(targetH, ch - 4);
-            int logicalW = 154;
-            if (st->live_cfg.display_mode == DisplayMode::Compact) logicalW = 64;
-            else if (st->live_cfg.display_mode == DisplayMode::Extended) logicalW = (st->live_cfg.extended_slots == 3) ? 198 : 242;
+            int logicalW = 156;
+            if (st->live_cfg.display_mode == DisplayMode::Compact) logicalW = 68;
+            else if (st->live_cfg.display_mode == DisplayMode::Extended) logicalW = (st->live_cfg.extended_slots == 3) ? 200 : 244;
             int targetW = std::min(cw - 8, MulDiv(logicalW, dpi, 96));
 
             int px = (cw - targetW) / 2;
@@ -361,7 +366,8 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) {
             RefreshPreview(hDlg, st);
             return TRUE;
         }
-        if (!st->in_init && (code == CBN_SELCHANGE || code == EN_CHANGE || (id == IDC_CHK_FILL_TOMORROW && code == BN_CLICKED))) {
+        if (!st->in_init && (code == CBN_SELCHANGE || code == EN_CHANGE ||
+            ((id == IDC_CHK_FILL_TOMORROW || id == IDC_CHK_SHOW_RAIN) && code == BN_CLICKED))) {
             if (id == IDC_COMBO_PROVIDER || id == IDC_COMBO_MODE || id == IDC_COMBO_ICON_STYLE || id == IDC_COMBO_ALERT) {
                 UpdateControlStates(hDlg);
             }

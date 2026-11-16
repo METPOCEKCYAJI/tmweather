@@ -10,9 +10,13 @@ enum class WeatherKind {
     PartlyCloudyNight,
     Cloudy,
     Fog,
+    Drizzle,
     Rain,
+    Sleet,
     Snow,
-    Storm
+    Hail,
+    Storm,
+    StormHail
 };
 
 enum class DayPart {
@@ -41,10 +45,11 @@ struct ForecastSlot {
     WeatherKind kind = WeatherKind::Unknown;
 };
 
-struct DailyTemp {
+struct AlertSegment {
+    int hours_ahead = 0;
     int day_offset = 0;
-    int day_num = 0;
-    double day_temp_c = 0.0;
+    DayPart part = DayPart::Day;
+    double temp_c = 0.0;
 };
 
 struct GeoCandidate {
@@ -74,5 +79,5 @@ struct WeatherSnapshot {
     std::wstring updated_time;
 
     std::vector<ForecastSlot> slots;
-    std::vector<DailyTemp> daily;
+    std::vector<AlertSegment> alert_segments;
 };

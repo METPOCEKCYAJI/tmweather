@@ -48,6 +48,7 @@
 #define IDC_COMBO_ALERT_POS         1038
 
 #define IDC_CHK_FILL_TOMORROW       1039
-#define IDC_LBL_REFRESH             1040
-#define IDC_EDIT_REFRESH            1041
-#define IDC_LBL_STATUS              1042
+#define IDC_CHK_SHOW_RAIN           1040
+#define IDC_LBL_REFRESH             1041
+#define IDC_EDIT_REFRESH            1042
+#define IDC_LBL_STATUS              1043
