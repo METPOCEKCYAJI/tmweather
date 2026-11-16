@@ -1,4 +1,5 @@
 #pragma once
+#include <windows.h>
 #include "PluginInterface.h"
 #include "Config.h"
 #include "WeatherModels.h"
