@@ -6,7 +6,7 @@ enum class ProviderType { OpenMeteo = 0, Yandex = 1 };
 enum class TempUnit { Celsius = 0, Fahrenheit = 1 };
 enum class DisplayMode { Compact = 0, Medium = 1, Extended = 2 };
 enum class ScrollBehavior { TimeAndWheel = 0, AutoCarousel = 1 };
-enum class IconStyle { BoldVivid = 0, ThickOutline = 1, Soft3D = 2, HighContrastWhite = 3, Monochrome = 4 };
+enum class IconStyle { SkyCards = 0, TopBar = 1 };
 enum class BorderStyle { BorderAndFill = 0, FillOnly = 1, Minimal = 2 };
 
 struct PluginConfig {
@@ -26,7 +26,7 @@ struct PluginConfig {
     DisplayMode display_mode = DisplayMode::Extended;
     int extended_slots = 4;
     ScrollBehavior scroll_mode = ScrollBehavior::TimeAndWheel;
-    IconStyle icon_style = IconStyle::BoldVivid;
+    IconStyle icon_style = IconStyle::SkyCards;
     BorderStyle border_style = BorderStyle::BorderAndFill;
     bool fill_tomorrow = true;
     int refresh_minutes = 30;

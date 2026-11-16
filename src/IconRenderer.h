@@ -5,6 +5,6 @@
 
 class IconRenderer {
 public:
-    static void DrawWeatherIcon(HDC hdc, float x, float y, float size, WeatherKind kind, bool dark_mode, IconStyle style);
-    static void DrawRainDrop(HDC hdc, float x, float y, float size, bool dark_mode, IconStyle style);
+    static void DrawTileBackdrop(HDC hdc, float x, float y, float w, float h, WeatherKind kind, bool dark_mode, IconStyle style);
+    static void DrawRainDrop(HDC hdc, float x, float y, float size, bool dark_mode);
 };

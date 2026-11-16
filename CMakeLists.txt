@@ -16,7 +16,7 @@ set(PLUGIN_INTERFACE_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/include/PluginInterface
 if(NOT EXISTS "${PLUGIN_INTERFACE_HEADER}")
     file(MAKE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include")
     file(DOWNLOAD
-        "https://raw.githubusercontent.com/zhongyang219/TrafficMonitor/master/TrafficMonitor/PluginInterface.h"
+        "https://raw.githubusercontent.com/zhongyang219/TrafficMonitor/master/include/PluginInterface.h"
         "${PLUGIN_INTERFACE_HEADER}"
         TLS_VERIFY ON
     )
@@ -66,3 +66,12 @@ target_link_libraries(WeatherPlus PRIVATE
     gdi32
     msimg32
 )
+
+add_library(EmptySpacer SHARED
+    src/EmptySpacer.cpp
+)
+target_include_directories(EmptySpacer PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_compile_definitions(EmptySpacer PRIVATE UNICODE _UNICODE NOMINMAX)
+if(MSVC)
+    target_compile_options(EmptySpacer PRIVATE /utf-8 /W3)
+endif()

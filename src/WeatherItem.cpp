@@ -21,68 +21,26 @@ HFONT CreateUiFont(int height_px, bool bold) {
                        CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, L"Segoe UI");
 }
 
-void DrawHalfCard(HDC hdc, int x, int y, int w, int h, float s, bool is_top, bool dark_mode, BorderStyle style) {
-    if (style == BorderStyle::Minimal) return;
-    Graphics g(hdc);
-    g.SetSmoothingMode(SmoothingModeAntiAlias);
-
-    Color fillCol = dark_mode ? Color(18, 255, 255, 255) : Color(165, 255, 255, 255);
-    SolidBrush fillBr(fillCol);
-
-    float rad = 4.5f * s;
-    float d = rad * 2.0f;
-    float rx = (float)x + 0.5f;
-    float rw = (float)w - 1.5f;
-    float ry = is_top ? ((float)y + 0.5f) : (float)y;
-    float rh = is_top ? ((float)h - 0.5f) : ((float)h - 1.0f);
-
-    GraphicsPath p;
-    if (is_top) {
-        p.AddArc(rx, ry, d, d, 180, 90);
-        p.AddArc(rx + rw - d, ry, d, d, 270, 90);
-        p.AddLine(rx + rw, ry + rh, rx, ry + rh);
-        p.CloseFigure();
-        g.FillPath(&fillBr, &p);
-        if (style == BorderStyle::BorderAndFill) {
-            Color borderCol = dark_mode ? Color(52, 255, 255, 255) : Color(48, 0, 0, 0);
-            Pen pen(borderCol, 1.0f);
-            GraphicsPath b;
-            b.AddLine(rx, ry + rh, rx, ry + rad);
-            b.AddArc(rx, ry, d, d, 180, 90);
-            b.AddArc(rx + rw - d, ry, d, d, 270, 90);
-            b.AddLine(rx + rw, ry + rad, rx + rw, ry + rh);
-            g.DrawPath(&pen, &b);
-        }
-    } else {
-        p.AddLine(rx, ry, rx + rw, ry);
-        p.AddArc(rx + rw - d, ry + rh - d, d, d, 0, 90);
-        p.AddArc(rx, ry + rh - d, d, d, 90, 90);
-        p.CloseFigure();
-        g.FillPath(&fillBr, &p);
-        if (style == BorderStyle::BorderAndFill) {
-            Color borderCol = dark_mode ? Color(52, 255, 255, 255) : Color(48, 0, 0, 0);
-            Pen pen(borderCol, 1.0f);
-            GraphicsPath b;
-            b.AddLine(rx + rw, ry, rx + rw, ry + rh - rad);
-            b.AddArc(rx + rw - d, ry + rh - d, d, d, 0, 90);
-            b.AddArc(rx, ry + rh - d, d, d, 90, 90);
-            b.AddLine(rx, ry + rh - rad, rx, ry);
-            g.DrawPath(&pen, &b);
-        }
+void DrawShadowText(HDC hdc, const wchar_t* text, RECT rc, UINT fmt, COLORREF fg, bool shadow) {
+    if (shadow) {
+        SetTextColor(hdc, RGB(10, 12, 16));
+        RECT sh{ rc.left, rc.top + 1, rc.right, rc.bottom + 1 };
+        DrawTextW(hdc, text, -1, &sh, fmt);
     }
+    SetTextColor(hdc, fg);
+    DrawTextW(hdc, text, -1, &rc, fmt);
 }
 } // namespace
 
-WeatherItem::WeatherItem(WeatherPlugin* owner, bool is_top) : m_owner(owner), m_isTop(is_top) {}
+WeatherItem::WeatherItem(WeatherPlugin* owner) : m_owner(owner) {}
 
 const wchar_t* WeatherItem::GetItemName() const {
-    LangMode l = m_owner->GetConfig().lang;
-    m_nameBuf = m_isTop ? L10n::TopItemName(l) : L10n::BottomItemName(l);
+    m_nameBuf = L10n::ItemName(m_owner->GetConfig().lang);
     return m_nameBuf.c_str();
 }
 
 const wchar_t* WeatherItem::GetItemId() const {
-    return m_isTop ? L"WeatherPlus_Top" : L"WeatherPlus_Bottom";
+    return L"WeatherPlus_MainWidget";
 }
 
 const wchar_t* WeatherItem::GetItemLableText() const { return L""; }
@@ -92,11 +50,11 @@ const wchar_t* WeatherItem::GetItemValueSampleText() const { return L""; }
 int WeatherItem::GetItemWidth() const {
     auto cfg = m_owner->GetConfig();
     switch (cfg.display_mode) {
-    case DisplayMode::Compact:  return 54;
-    case DisplayMode::Medium:   return 160; // 72 + 2*44
-    case DisplayMode::Extended: return (cfg.extended_slots == 3) ? 208 : 252; // 76 + 3*44 or 4*44
+    case DisplayMode::Compact:  return 64;
+    case DisplayMode::Medium:   return 152; // 64 + 2*44
+    case DisplayMode::Extended: return (cfg.extended_slots == 3) ? 196 : 240; // 64 + 3*44 or 4*44
     }
-    return 160;
+    return 152;
 }
 
 int WeatherItem::GetItemWidthEx(void* hDC) const {
@@ -143,123 +101,148 @@ void WeatherItem::DrawItem(void* hDC, int x, int y, int w, int h, bool dark_mode
     WeatherSnapshot snap = m_owner->GetSnapshot();
     int scroll_idx = m_owner->GetScrollIndex();
 
-    float s = (float)h / 16.0f;
+    bool isSky = (cfg.icon_style == IconStyle::SkyCards);
+    bool twoRowInside = (h >= 24);
+    float s = twoRowInside ? ((float)h / 30.0f) : ((float)h / 18.0f);
 
-    COLORREF colPrimary  = dark_mode ? RGB(246, 248, 252) : RGB(22, 26, 32);
-    COLORREF colMuted    = dark_mode ? RGB(172, 182, 198) : RGB(84, 94, 110);
-    COLORREF colTomorrow = dark_mode ? RGB(110, 224, 255) : RGB(3, 105, 161);
+    COLORREF colPrimary = isSky ? RGB(255, 255, 255) : (dark_mode ? RGB(246, 248, 252) : RGB(22, 26, 32));
+    COLORREF colMuted   = isSky ? RGB(230, 238, 248) : (dark_mode ? RGB(154, 166, 184) : RGB(84, 94, 110));
+    COLORREF colTmw     = isSky ? RGB(147, 232, 255) : (dark_mode ? RGB(105, 215, 255) : RGB(3, 105, 161));
 
-    DrawHalfCard(hdc, x, y, w, h, s, m_isTop, dark_mode, cfg.border_style);
+    int numForecast = (cfg.display_mode == DisplayMode::Compact) ? 0
+                    : ((cfg.display_mode == DisplayMode::Medium) ? 2 : cfg.extended_slots);
+    int totalTiles = 1 + numForecast;
 
-    wchar_t tempBuf[16] = L"--\u00B0";
-    if (snap.valid) FormatTemp(snap.current_temp_c, cfg.unit, tempBuf, 16);
+    int curW = (cfg.display_mode == DisplayMode::Compact) ? w : std::min(w, (int)std::lround(64.0f * (twoRowInside ? ((float)h / 30.0f) : 1.0f)));
+    if (!twoRowInside && cfg.display_mode != DisplayMode::Compact) {
+        curW = std::min(w, (int)std::lround((float)w * 64.0f / (float)GetItemWidth()));
+    }
+
+    int totalSlots = (int)snap.slots.size();
+    int maxStart = std::max(0, totalSlots - numForecast);
+    int start = std::clamp(scroll_idx, 0, maxStart);
+
+    wchar_t curTemp[16] = L"--\u00B0";
+    if (snap.valid) FormatTemp(snap.current_temp_c, cfg.unit, curTemp, 16);
     WeatherKind curKind = snap.valid ? snap.current_kind : WeatherKind::Cloudy;
+    std::wstring cityName = snap.valid ? snap.city_name : cfg.EffectiveCityName();
 
-    // 1. Compact mode: Top = full 15x15 icon centered (+ rain badge), Bottom = centered bold temp
-    if (cfg.display_mode == DisplayMode::Compact) {
-        if (m_isTop) {
-            float icoSize = (float)(h - 1);
-            IconRenderer::DrawWeatherIcon(hdc, x + (w - icoSize) * 0.5f, (float)y + 0.5f, icoSize, curKind, dark_mode, cfg.icon_style);
-            if (snap.valid && snap.rain_expected) {
-                IconRenderer::DrawRainDrop(hdc, (float)(x + w) - 10.5f * s, (float)y + 2.0f * s, 8.5f * s, dark_mode, cfg.icon_style);
-            }
-        } else {
-            HFONT fTemp = CreateUiFont(std::max(10, (int)std::lround(13.0f * s)), true);
-            HFONT oldF = (HFONT)SelectObject(hdc, fTemp);
-            SetTextColor(hdc, colPrimary);
-            RECT rc{ x + 2, y, x + w - 2, y + h };
-            DrawTextW(hdc, tempBuf, -1, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
-            SelectObject(hdc, oldF);
-            DeleteObject(fTemp);
+    float topY = (float)y + 1.0f;
+    float boxH = (float)h - 2.0f;
+
+    // 1. Draw tile backgrounds (SkyCards or TopBar)
+    for (int i = 0; i < totalTiles; ++i) {
+        int tx = (i == 0) ? x : (x + curW + (int)std::lround((float)(w - curW) * (float)(i - 1) / (float)numForecast));
+        int txNext = (i == 0) ? (x + curW) : (x + curW + (int)std::lround((float)(w - curW) * (float)i / (float)numForecast));
+        int tw = std::max(1, txNext - tx);
+
+        WeatherKind k = curKind;
+        if (i > 0) {
+            int idx = start + (i - 1);
+            k = (snap.valid && idx < totalSlots) ? snap.slots[idx].kind : WeatherKind::Cloudy;
         }
-        RestoreDC(hdc, saved);
-        return;
+        IconRenderer::DrawTileBackdrop(hdc, (float)tx, topY, (float)tw, boxH, k, dark_mode, cfg.icon_style);
     }
 
-    // 2. Medium & Extended modes
-    int curW = (int)std::lround((cfg.display_mode == DisplayMode::Medium ? 72.0f : 76.0f) * s);
-    curW = std::min(curW, w);
+    // 2. Draw crisp text inside each tile
+    if (twoRowInside) {
+        HFONT fTop = CreateUiFont(std::max(8, (int)std::lround(9.5f * s)), false);
+        HFONT fVal = CreateUiFont(std::max(10, (int)std::lround(13.0f * s)), true);
+        HFONT oldF = (HFONT)SelectObject(hdc, fTop);
 
-    Graphics g(hdc);
-    Color divCol = dark_mode ? Color(34, 255, 255, 255) : Color(34, 0, 0, 0);
-    Pen divPen(divCol, 1.0f);
+        for (int i = 0; i < totalTiles; ++i) {
+            int tx = (i == 0) ? x : (x + curW + (int)std::lround((float)(w - curW) * (float)(i - 1) / (float)numForecast));
+            int txNext = (i == 0) ? (x + curW) : (x + curW + (int)std::lround((float)(w - curW) * (float)i / (float)numForecast));
+            int tw = std::max(1, txNext - tx);
 
-    if (m_isTop) {
-        // Left zone: 15x15 hero icon on left + City centered in [x + 21*s .. x + curW - 3*s]
-        float icoSize = (float)(h - 1);
-        IconRenderer::DrawWeatherIcon(hdc, (float)x + 4.0f * s, (float)y + 0.5f, icoSize, curKind, dark_mode, cfg.icon_style);
+            int topPad = isSky ? (int)std::lround(2.0f * s) : (int)std::lround(4.0f * s);
+            RECT rcTop{ tx + 2, y + topPad, tx + tw - 2, y + topPad + (int)std::lround(11.0f * s) };
+            RECT rcBot{ tx + 2, y + topPad + (int)std::lround(10.5f * s), tx + tw - 2, y + h - 2 };
 
-        std::wstring cityText = snap.valid ? snap.city_name : cfg.EffectiveCityName();
-        HFONT fCity = CreateUiFont(std::max(9, (int)std::lround(11.0f * s)), false);
-        HFONT oldF = (HFONT)SelectObject(hdc, fCity);
-        SetTextColor(hdc, colMuted);
-        RECT rcCity{ x + (int)std::lround(21.0f * s), y, x + curW - (int)std::lround(3.0f * s), y + h };
-        DrawTextW(hdc, cityText.c_str(), -1, &rcCity, DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS | DT_NOPREFIX);
-        SelectObject(hdc, oldF);
-        DeleteObject(fCity);
-    } else {
-        // Bottom left zone: Rain drop under hero icon (when raining) + Temp CENTERED under city!
-        if (snap.valid && snap.rain_expected) {
-            float dropSize = 11.0f * s;
-            IconRenderer::DrawRainDrop(hdc, (float)x + 6.5f * s, (float)y + (h - dropSize) * 0.5f, dropSize, dark_mode, cfg.icon_style);
-        }
-        HFONT fCurT = CreateUiFont(std::max(10, (int)std::lround(13.0f * s)), true);
-        HFONT oldF = (HFONT)SelectObject(hdc, fCurT);
-        SetTextColor(hdc, colPrimary);
-        RECT rcCurT{ x + (int)std::lround(21.0f * s), y, x + curW - (int)std::lround(3.0f * s), y + h };
-        DrawTextW(hdc, tempBuf, -1, &rcCurT, DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
-        SelectObject(hdc, oldF);
-        DeleteObject(fCurT);
-    }
+            if (i == 0) {
+                SelectObject(hdc, fTop);
+                DrawShadowText(hdc, cityName.c_str(), rcTop, DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS | DT_NOPREFIX, colMuted, isSky);
+                SelectObject(hdc, fVal);
+                DrawShadowText(hdc, curTemp, rcBot, DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX, colPrimary, isSky);
+                if (snap.valid && snap.rain_expected) {
+                    IconRenderer::DrawRainDrop(hdc, (float)(tx + tw) - 11.0f * s, (float)(y + h) - 12.5f * s, 9.0f * s, dark_mode || isSky);
+                }
+            } else {
+                int idx = start + (i - 1);
+                if (snap.valid && idx < totalSlots) {
+                    const auto& slot = snap.slots[idx];
+                    std::wstring topLbl;
+                    if (slot.is_today) {
+                        topLbl = L10n::DayPartFull(cfg.lang, slot.part);
+                    } else {
+                        if (slot.day_num > 0) topLbl = std::to_wstring(slot.day_num) + L"\u00B7";
+                        topLbl += L10n::DayPartShort(cfg.lang, slot.part);
+                    }
+                    SelectObject(hdc, fTop);
+                    DrawShadowText(hdc, topLbl.c_str(), rcTop, DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX,
+                                   slot.is_today ? colMuted : colTmw, isSky);
 
-    int numTiles = (cfg.display_mode == DisplayMode::Medium) ? 2 : cfg.extended_slots;
-    int remW = w - curW;
-    if (numTiles > 0 && remW > 10) {
-        float divTop = m_isTop ? ((float)y + 2.0f * s) : (float)y;
-        float divBot = m_isTop ? (float)(y + h) : ((float)(y + h) - 2.0f * s);
-        g.DrawLine(&divPen, (float)(x + curW), divTop, (float)(x + curW), divBot);
-
-        float tileW = (float)remW / (float)numTiles;
-        int totalSlots = (int)snap.slots.size();
-        int maxStart = std::max(0, totalSlots - numTiles);
-        int start = std::clamp(scroll_idx, 0, maxStart);
-
-        HFONT fTile = CreateUiFont(std::max(8, (int)std::lround(10.5f * s)), false);
-        HFONT oldF = (HFONT)SelectObject(hdc, fTile);
-
-        for (int i = 0; i < numTiles; ++i) {
-            int tx = x + curW + (int)std::lround(i * tileW);
-            int tw = (int)std::lround((i + 1) * tileW) - (int)std::lround(i * tileW);
-
-            if (i > 0) {
-                g.DrawLine(&divPen, (float)tx, divTop, (float)tx, divBot);
-            }
-
-            int idx = start + i;
-            if (snap.valid && idx < totalSlots) {
-                const auto& slot = snap.slots[idx];
-                if (m_isTop) {
-                    float tileIco = (float)(h - 1);
-                    IconRenderer::DrawWeatherIcon(hdc, tx + (tw - tileIco) * 0.5f, (float)y + 0.5f,
-                                                  tileIco, slot.kind, dark_mode, cfg.icon_style);
-                } else {
                     wchar_t tStr[12]{};
                     FormatTemp(slot.temp_c, cfg.unit, tStr, 12);
-                    std::wstring prefix;
-                    if (!slot.is_today && slot.day_num > 0) {
-                        prefix = std::to_wstring(slot.day_num);
-                    }
-                    prefix += L10n::DayPartShort(cfg.lang, slot.part);
-                    std::wstring lbl = prefix + L" " + tStr;
-
-                    SetTextColor(hdc, slot.is_today ? colPrimary : colTomorrow);
-                    RECT rcLbl{ tx + 1, y, tx + tw - 1, y + h };
-                    DrawTextW(hdc, lbl.c_str(), -1, &rcLbl, DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
+                    SelectObject(hdc, fVal);
+                    DrawShadowText(hdc, tStr, rcBot, DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX, colPrimary, isSky);
                 }
             }
         }
         SelectObject(hdc, oldF);
-        DeleteObject(fTile);
+        DeleteObject(fTop);
+        DeleteObject(fVal);
+    } else {
+        // Compact 16px fallback (1-line inside tile)
+        HFONT fInline = CreateUiFont(std::max(9, h - 5), true);
+        HFONT oldF = (HFONT)SelectObject(hdc, fInline);
+        for (int i = 0; i < totalTiles; ++i) {
+            int tx = (i == 0) ? x : (x + curW + (int)std::lround((float)(w - curW) * (float)(i - 1) / (float)numForecast));
+            int txNext = (i == 0) ? (x + curW) : (x + curW + (int)std::lround((float)(w - curW) * (float)i / (float)numForecast));
+            int tw = std::max(1, txNext - tx);
+            RECT rc{ tx + 2, y, tx + tw - 2, y + h };
+
+            if (i == 0) {
+                std::wstring lbl = (cfg.display_mode == DisplayMode::Compact) ? std::wstring(curTemp) : (cityName.substr(0, std::min<size_t>(4, cityName.size())) + L" " + curTemp);
+                DrawShadowText(hdc, lbl.c_str(), rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX, colPrimary, isSky);
+                if (snap.valid && snap.rain_expected) {
+                    IconRenderer::DrawRainDrop(hdc, (float)(tx + tw) - 9.0f, (float)y + 3.0f, 7.5f, dark_mode || isSky);
+                }
+            } else {
+                int idx = start + (i - 1);
+                if (snap.valid && idx < totalSlots) {
+                    const auto& slot = snap.slots[idx];
+                    wchar_t tStr[12]{};
+                    FormatTemp(slot.temp_c, cfg.unit, tStr, 12);
+                    std::wstring prefix = (!slot.is_today && slot.day_num > 0) ? std::to_wstring(slot.day_num) : std::wstring();
+                    prefix += L10n::DayPartShort(cfg.lang, slot.part);
+                    std::wstring lbl = prefix + L" " + tStr;
+                    DrawShadowText(hdc, lbl.c_str(), rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX,
+                                   slot.is_today ? colPrimary : colTmw, isSky);
+                }
+            }
+        }
+        SelectObject(hdc, oldF);
+        DeleteObject(fInline);
+    }
+
+    // 3. Draw crisp outer border and vertical tile dividers
+    if (cfg.border_style != BorderStyle::Minimal) {
+        Graphics g(hdc);
+        g.SetSmoothingMode(SmoothingModeAntiAlias);
+        Color divCol = dark_mode ? Color(48, 255, 255, 255) : Color(44, 0, 0, 0);
+        Pen divPen(divCol, 1.0f);
+
+        for (int i = 1; i < totalTiles; ++i) {
+            int tx = x + curW + (int)std::lround((float)(w - curW) * (float)(i - 1) / (float)numForecast);
+            g.DrawLine(&divPen, (float)tx, topY + 1.0f, (float)tx, topY + boxH - 1.0f);
+        }
+
+        if (cfg.border_style == BorderStyle::BorderAndFill) {
+            Color borderCol = dark_mode ? Color(65, 255, 255, 255) : Color(58, 0, 0, 0);
+            Pen borderPen(borderCol, 1.0f);
+            g.DrawRectangle(&borderPen, (float)x + 0.5f, topY, (float)w - 1.5f, boxH);
+        }
     }
 
     RestoreDC(hdc, saved);

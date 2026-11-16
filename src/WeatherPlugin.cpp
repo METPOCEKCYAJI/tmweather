@@ -25,7 +25,7 @@ WeatherPlugin& WeatherPlugin::Instance() {
     return inst;
 }
 
-WeatherPlugin::WeatherPlugin() : m_topItem(this, true), m_bottomItem(this, false) {}
+WeatherPlugin::WeatherPlugin() : m_item(this) {}
 
 WeatherPlugin::~WeatherPlugin() {
     StopWorker();
@@ -65,9 +65,7 @@ void WeatherPlugin::OnExtenedInfo(ExtendedInfoIndex index, const wchar_t* data) 
 }
 
 IPluginItem* WeatherPlugin::GetItem(int index) {
-    if (index == 0) return &m_topItem;
-    if (index == 1) return &m_bottomItem;
-    return nullptr;
+    return (index == 0) ? &m_item : nullptr;
 }
 
 void WeatherPlugin::StartWorker() {
@@ -160,7 +158,7 @@ const wchar_t* WeatherPlugin::GetInfo(PluginInfoIndex index) {
     case TMI_DESCRIPTION: return L10n::PluginDesc(lang);
     case TMI_AUTHOR:      return L"Community";
     case TMI_COPYRIGHT:   return L"MIT License";
-    case TMI_VERSION:     return L"1.1.0";
+    case TMI_VERSION:     return L"2.0.0";
     case TMI_URL:         return L"https://github.com/zhongyang219/TrafficMonitor";
     default:              return L"";
     }

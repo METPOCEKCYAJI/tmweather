@@ -44,8 +44,7 @@ private:
     void WorkerLoop();
 
     ITrafficMonitor* m_app = nullptr;
-    WeatherItem m_topItem;
-    WeatherItem m_bottomItem;
+    WeatherItem m_item;
 
     mutable std::mutex m_mutex;
     PluginConfig m_cfg;
